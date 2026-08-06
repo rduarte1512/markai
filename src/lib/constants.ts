@@ -32,5 +32,6 @@ export const NAV_ITEMS = [
   { href: "/dashboard/funnels", label: "Funis", icon: "Workflow" },
   { href: "/dashboard/content", label: "Conteúdo", icon: "CalendarDays" },
   { href: "/dashboard/credits", label: "Créditos", icon: "Coins" },
+  { href: "/dashboard/plans", label: "Planos", icon: "Crown" },
   { href: "/dashboard/settings", label: "Definições", icon: "Settings" },
 ] as const;
