@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     if (!result) throw new Error("REGISTRATION_FAILED");
 
     const token = await createSessionToken(result.user_id, result.workspace_id);
-    const response = NextResponse.json({ ok: true });
+    const response = NextResponse.json({ ok: true, next: "/onboarding" });
     response.cookies.set(SESSION_COOKIE, token, sessionCookieOptions());
     return response;
   } catch (cause) {

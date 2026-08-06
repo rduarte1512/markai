@@ -1,11 +1,23 @@
+import { redirect } from "next/navigation";
 import { Sidebar, MobileMenu } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { requireAppContext } from "@/lib/auth";
+import { getSql } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const context = await requireAppContext();
+  const sql = getSql();
+  const brands = (await sql`
+    select count(*)::int as count
+    from brands
+    where workspace_id = ${context.workspace_id}
+      and status = 'active'
+  `) as unknown as Array<{ count: number }>;
+
+  if (Number(brands[0]?.count || 0) === 0) redirect("/onboarding");
+
   const balance = Number(context.monthly_balance) + Number(context.extra_balance);
 
   return (
