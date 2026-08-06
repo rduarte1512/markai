@@ -16,6 +16,7 @@ MarkAI é um MVP de uma plataforma de marketing com IA para agências e freelanc
 - Carteira de créditos com saldo mensal e saldo extra
 - Débito atómico de créditos e reembolso automático quando uma geração falha
 - Sincronização automática do saldo de créditos na interface
+- Dashboard premium com plano, créditos, ritmo, insights e ações rápidas
 - Dashboard de consumo por modelo, marca e operação
 - Estrutura de dados pronta para funis, conteúdo, SEO, relatórios, portal de cliente, assets e colaboração
 - CI no GitHub com typecheck e build
