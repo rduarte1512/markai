@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { Sidebar, MobileMenu } from "@/components/sidebar";
+import { MobileMenu } from "@/components/sidebar";
+import { LiveSidebar } from "@/components/live-sidebar";
 import { Topbar } from "@/components/topbar";
 import { UpgradePopup } from "@/components/upgrade-popup";
 import { CommandCenter } from "@/components/command-center";
@@ -25,7 +26,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="dashboard-shell premium-dashboard-shell studio-v2-shell">
-      <Sidebar plan={context.plan_key} balance={balance} allowance={allowance} />
+      <LiveSidebar plan={context.plan_key} balance={balance} allowance={allowance} />
       <div className="dashboard-area">
         <Topbar workspaceName={context.workspace_name} userName={context.user_name} />
         <main className="dashboard-content premium-dashboard-content studio-v2-content">{children}</main>
