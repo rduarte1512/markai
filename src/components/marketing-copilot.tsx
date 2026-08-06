@@ -4,9 +4,10 @@ import { useMemo, useState } from "react";
 import {
   ArrowUp, BarChart3, Bot, BrainCircuit, BriefcaseBusiness, CheckCircle2,
   ChevronRight, Clock3, FileText, Lightbulb, LoaderCircle, MessageSquare,
-  MoreHorizontal, Paperclip, Plus, Search, Send, ShieldCheck, Sparkles,
+  MoreHorizontal, Paperclip, Plus, Search, ShieldCheck, Sparkles,
   Target, TrendingUp, UserRound, WandSparkles, Zap,
 } from "lucide-react";
+import { ModelPicker } from "@/components/model-picker";
 import type { Brand, ModelAccess } from "@/lib/types";
 
 const promptGroups = [
@@ -32,7 +33,7 @@ export function MarketingCopilot({ brands, models, initialBrandId, userName }: {
 
   const contextScore = useMemo(() => {
     if (!selectedBrand) return 0;
-    return [selectedBrand.description, selectedBrand.audience, selectedBrand.tone_of_voice, selectedBrand.industry, selectedBrand.website].filter(Boolean).length * 18 + 10;
+    return Math.min(100, [selectedBrand.description, selectedBrand.audience, selectedBrand.tone_of_voice, selectedBrand.industry, selectedBrand.website].filter(Boolean).length * 18 + 10);
   }, [selectedBrand]);
 
   async function sendMessage(event: React.FormEvent<HTMLFormElement>) {
@@ -73,7 +74,7 @@ export function MarketingCopilot({ brands, models, initialBrandId, userName }: {
   }
 
   return (
-    <div className="agent-v2">
+    <div className="agent-v2 agent-v3">
       <section className="studio-hero agent-hero">
         <div>
           <span className="studio-kicker"><BrainCircuit size={14}/> Brand-aware intelligence</span>
@@ -98,9 +99,9 @@ export function MarketingCopilot({ brands, models, initialBrandId, userName }: {
         </aside>
 
         <main className="agent-chat-panel">
-          <header className="agent-chat-header">
+          <header className="agent-chat-header agent-chat-header-v3">
             <div><span className="chat-agent-icon premium"><Bot size={19}/><i/></span><div><strong>MarkAI Strategist</strong><small>Contexto: {selectedBrand?.name || "Sem marca"}</small></div></div>
-            <div className="agent-header-controls"><select value={modelKey} onChange={(event) => setModelKey(event.target.value)}>{models.map((model) => <option value={model.key} disabled={!model.available} key={model.key}>{model.display_name} · {model.credit_cost} cr.</option>)}</select><button><MoreHorizontal size={17}/></button></div>
+            <div className="agent-header-controls agent-model-control"><ModelPicker models={models} value={modelKey} onChange={setModelKey}/><button aria-label="Mais opções"><MoreHorizontal size={17}/></button></div>
           </header>
 
           <div className="agent-message-stream">
@@ -121,12 +122,15 @@ export function MarketingCopilot({ brands, models, initialBrandId, userName }: {
             {loading && <div className="agent-message assistant"><div className="agent-message-avatar"><Bot size={16}/></div><div className="agent-message-content"><div className="agent-message-meta"><strong>MarkAI Strategist</strong><span>a analisar</span></div><div className="agent-thinking"><span/><span/><span/><small>A cruzar Brand Kit, objetivo e histórico...</small></div></div></div>}
           </div>
 
-          <div className="agent-composer-area">
+          <div className="agent-composer-area agent-composer-area-v3">
             {error && <div className="form-error">{error}</div>}
             <div className="agent-suggestion-row"><button onClick={() => usePrompt("Cria um plano de ação com prioridades para esta semana.")}><Lightbulb size={13}/> Plano da semana</button><button onClick={() => usePrompt("Que oportunidade de crescimento estou a ignorar?")}><TrendingUp size={13}/> Encontrar oportunidade</button><button onClick={() => usePrompt("Revê o posicionamento e sugere uma versão mais forte.")}><Target size={13}/> Melhorar posicionamento</button></div>
-            <form className="agent-composer" onSubmit={sendMessage}>
+            <form className="agent-composer agent-composer-v3" onSubmit={sendMessage}>
               <textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder={brands.length ? `Pergunta qualquer coisa sobre ${selectedBrand?.name || "a marca"}...` : "Adiciona uma marca primeiro"} disabled={!brands.length || loading} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }}/>
-              <footer><div><button type="button"><Paperclip size={16}/></button><button type="button"><Sparkles size={16}/> Ferramentas</button></div><div><span>{selectedModel?.credit_cost || 0} cr.</span><button className="agent-send-button" disabled={!message.trim() || !brandId || loading} type="submit">{loading ? <LoaderCircle className="spin" size={16}/> : <ArrowUp size={17}/>}</button></div></footer>
+              <footer>
+                <div><button type="button"><Paperclip size={16}/></button><button type="button"><Sparkles size={16}/> Ferramentas</button><span className="composer-model-chip"><BrainCircuit size={12}/>{selectedModel?.display_name || "Modelo"}</span></div>
+                <div><span>{selectedModel?.credit_cost || 0} cr. por resposta</span><button className="agent-send-button" disabled={!message.trim() || !brandId || loading} type="submit">{loading ? <LoaderCircle className="spin" size={16}/> : <ArrowUp size={17}/>}</button></div>
+              </footer>
             </form>
             <small className="agent-disclaimer">O MarkAI pode cometer erros. Confirma dados críticos antes de publicar.</small>
           </div>
