@@ -21,6 +21,11 @@ export async function POST(request: Request) {
 
     const plan = getPlan(planKey);
     const sql = getSql();
+    const now = new Date();
+    const subscriptionEnd = new Date(now);
+    const walletEnd = new Date(now);
+    subscriptionEnd.setMonth(subscriptionEnd.getMonth() + (cycle === "annual" ? 12 : 1));
+    walletEnd.setMonth(walletEnd.getMonth() + 1);
 
     await sql`select ensure_monthly_credit_reset(${session.workspaceId})`;
 
@@ -35,8 +40,8 @@ export async function POST(request: Request) {
         workspace_id, plan_key, status, provider, current_period_start,
         current_period_end, cancel_at_period_end, updated_at
       ) values (
-        ${session.workspaceId}, ${planKey}, 'active', 'markai_demo', now(),
-        ${cycle === "annual" ? sql`now() + interval '1 year'` : sql`now() + interval '1 month'`}, false, now()
+        ${session.workspaceId}, ${planKey}, 'active', 'markai_demo', ${now.toISOString()},
+        ${subscriptionEnd.toISOString()}, false, now()
       )
       on conflict (workspace_id) do update set
         plan_key = excluded.plan_key,
@@ -52,8 +57,8 @@ export async function POST(request: Request) {
       update credit_wallets
       set monthly_allowance = ${plan.credits},
           monthly_balance = greatest(monthly_balance, ${plan.credits}),
-          period_start = now(),
-          period_end = ${cycle === "annual" ? sql`now() + interval '1 month'` : sql`now() + interval '1 month'`},
+          period_start = ${now.toISOString()},
+          period_end = ${walletEnd.toISOString()},
           updated_at = now()
       where workspace_id = ${session.workspaceId}
     `;
