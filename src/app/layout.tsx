@@ -10,6 +10,7 @@ import "./landing-v3.css";
 import "./studio-v3-polish.css";
 import "./agent-readability.css";
 import "./dashboard-premium.css";
+import "./settings-readability.css";
 import { ScrollMotion } from "@/components/scroll-motion";
 
 export const metadata: Metadata = {
