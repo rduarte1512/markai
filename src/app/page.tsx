@@ -1,78 +1,95 @@
 import Link from "next/link";
 import {
-  ArrowRight, BadgeCheck, Bot, BriefcaseBusiness, CalendarDays, Check,
-  Coins, Megaphone, Sparkles, Workflow,
+  ArrowRight, BarChart3, Bot, BriefcaseBusiness, CalendarDays, Check,
+  ChevronRight, CirclePlay, Coins, Gem, Globe2, Layers3, Megaphone,
+  ShieldCheck, Sparkles, Star, TrendingUp, Users, Workflow, Zap,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { PlanSelector } from "@/components/plan-selector";
 
 const features = [
-  { icon: BriefcaseBusiness, title: "Brand Kits inteligentes", text: "Centraliza tom de voz, público, personas, cores e decisões para manter toda a equipa alinhada." },
-  { icon: Megaphone, title: "Ads Studio", text: "Gera copy, ângulos, CTAs e variações A/B para Meta, Google, TikTok e LinkedIn." },
-  { icon: Workflow, title: "Funis completos", text: "Planeia páginas, upsells, emails e etapas de conversão a partir de templates por negócio." },
-  { icon: Bot, title: "Copiloto de marketing", text: "Conversa com um agente que conhece a marca ativa e sugere melhorias com contexto real." },
-  { icon: CalendarDays, title: "Conteúdo e calendário", text: "Transforma ideias em calendários editoriais, briefs SEO e conteúdos prontos para revisão." },
-  { icon: Coins, title: "Créditos transparentes", text: "Vê o custo antes de gerar, controla limites por modelo e acompanha o consumo por marca." },
+  { icon: BriefcaseBusiness, title: "Brand intelligence", text: "Tom, público, personas, cores e decisões centralizados em Brand Kits vivos.", className: "feature-violet" },
+  { icon: Megaphone, title: "Ads Studio", text: "Copy, ângulos, CTAs e testes A/B para Meta, Google, TikTok e LinkedIn.", className: "feature-cyan" },
+  { icon: Workflow, title: "Funis completos", text: "Páginas, emails, upsells e sequências pensadas para conversão.", className: "feature-blue" },
+  { icon: Bot, title: "Copiloto estratégico", text: "Um agente que conhece cada marca e transforma contexto em decisões.", className: "feature-pink" },
+  { icon: CalendarDays, title: "Conteúdo e SEO", text: "Calendários, briefs e conteúdos prontos para revisão e publicação.", className: "feature-green" },
+  { icon: BarChart3, title: "Relatórios premium", text: "Entrega resultados claros aos clientes com métricas e recomendações.", className: "feature-gold" },
 ];
 
-const plans = [
-  { name: "Free", price: "0€", credits: "120 créditos/mês", brands: "1 marca", models: "Modelos base + testes limitados" },
-  { name: "Starter", price: "29€", credits: "3.000 créditos/mês", brands: "5 marcas", models: "Acesso alargado", featured: true },
-  { name: "Pro", price: "79€", credits: "12.000 créditos/mês", brands: "20 marcas", models: "Modelos médios e altos" },
-  { name: "Agency", price: "199€", credits: "50.000 créditos/mês", brands: "Marcas ilimitadas", models: "Todos os modelos" },
+const workflow = [
+  { number: "01", title: "Cria a marca", text: "O onboarding transforma informação simples num Brand Kit completo." },
+  { number: "02", title: "Escolhe o objetivo", text: "Anúncios, estratégia, conteúdo, funis ou análise de resultados." },
+  { number: "03", title: "Produz com IA", text: "Seleciona o modelo, vê o custo e gera trabalho alinhado com a marca." },
+  { number: "04", title: "Aprova e entrega", text: "Colabora, mede e apresenta ao cliente sem sair da plataforma." },
 ];
 
 export default function HomePage() {
   return (
-    <main>
-      <header className="site-header">
+    <main className="premium-landing">
+      <div className="landing-noise" />
+      <header className="site-header premium-site-header">
         <div className="container site-header-inner">
           <Logo />
-          <nav className="site-nav">
+          <nav className="site-nav premium-site-nav">
+            <a href="#produto">Produto</a>
             <a href="#funcionalidades">Funcionalidades</a>
-            <a href="#modelos">Modelos</a>
-            <a href="#precos">Preços</a>
+            <a href="#como-funciona">Como funciona</a>
+            <a href="#precos">Planos</a>
           </nav>
           <div className="header-actions">
             <Link className="button button-ghost button-sm" href="/login">Entrar</Link>
-            <Link className="button button-primary button-sm" href="/register">Criar conta <ArrowRight size={15} /></Link>
+            <Link className="button button-primary button-sm premium-header-cta" href="/register">Começar grátis <ArrowRight size={15} /></Link>
           </div>
         </div>
       </header>
 
-      <section className="hero">
-        <div className="container hero-grid">
-          <div className="hero-copy">
-            <span className="eyebrow">Marketing OS com inteligência artificial</span>
-            <h1 className="gradient-text">A tua agência inteira, numa só plataforma.</h1>
-            <p>Gere clientes, cria anúncios, planeia funis e toma decisões melhores com um agente de IA que conhece cada marca.</p>
-            <div className="hero-actions">
-              <Link className="button button-primary" href="/register">Começar gratuitamente <ArrowRight size={17} /></Link>
-              <a className="button button-secondary" href="#funcionalidades">Explorar plataforma</a>
+      <section className="premium-hero" id="produto">
+        <div className="premium-hero-glow premium-hero-glow-one" />
+        <div className="premium-hero-glow premium-hero-glow-two" />
+        <div className="container premium-hero-grid">
+          <div className="premium-hero-copy">
+            <span className="landing-badge"><span className="live-dot"/> O novo sistema operativo para agências</span>
+            <h1>Marketing com IA.<br/><span>Sem perder a alma da marca.</span></h1>
+            <p>Transforma briefing, estratégia, anúncios, conteúdo e relatórios num fluxo de trabalho elegante, rápido e completamente ligado.</p>
+            <div className="hero-actions premium-hero-actions">
+              <Link className="button button-primary landing-main-cta" href="/register">Criar workspace gratuito <ArrowRight size={18}/></Link>
+              <a className="button button-secondary landing-demo-button" href="#como-funciona"><CirclePlay size={18}/> Ver como funciona</a>
             </div>
-            <div className="hero-note">
-              <span><Check size={14} /> Sem cartão</span>
-              <span><Check size={14} /> 120 créditos incluídos</span>
-              <span><Check size={14} /> Pronto para Neon e Vercel</span>
+            <div className="premium-hero-trust">
+              <span><Check size={14}/> Sem cartão</span>
+              <span><Check size={14}/> Configuração em 2 minutos</span>
+              <span><Check size={14}/> 11 modelos de IA</span>
+            </div>
+            <div className="premium-social-proof">
+              <div className="avatar-stack"><span>R</span><span>M</span><span>A</span><span>+</span></div>
+              <div><strong><Star size={13} fill="currentColor"/> 4.9/5</strong><small>Feito para equipas que querem produzir melhor</small></div>
             </div>
           </div>
 
-          <div className="product-shell" aria-label="Pré-visualização do dashboard MarkAI">
-            <div className="product-window">
-              <div className="window-top"><span className="window-dot"/><span className="window-dot"/><span className="window-dot"/></div>
-              <div className="product-body">
-                <div className="product-sidebar">
-                  <div className="fake-logo" />
-                  <div className="fake-nav active"/><div className="fake-nav"/><div className="fake-nav"/><div className="fake-nav"/><div className="fake-nav"/>
-                </div>
-                <div className="product-main">
-                  <div className="fake-title"/><div className="fake-subtitle"/>
-                  <div className="fake-stats">
-                    <div className="fake-card"><div className="fake-number">12</div><div className="fake-label"/></div>
-                    <div className="fake-card"><div className="fake-number">48</div><div className="fake-label"/></div>
-                    <div className="fake-card"><div className="fake-number">8.4k</div><div className="fake-label"/></div>
+          <div className="landing-product-stage">
+            <div className="floating-chip chip-top"><Sparkles size={14}/> Campanha gerada em 18s</div>
+            <div className="floating-chip chip-bottom"><TrendingUp size={14}/> +34% potencial de conversão</div>
+            <div className="landing-dashboard-window">
+              <div className="landing-window-bar"><div><span/><span/><span/></div><small>app.markai.pt/dashboard</small><ShieldCheck size={14}/></div>
+              <div className="landing-dashboard-body">
+                <aside className="landing-mini-sidebar">
+                  <div className="mini-brand"><Sparkles size={15}/></div>
+                  {[0,1,2,3,4,5].map((item) => <div className={`mini-nav ${item === 0 ? "active" : ""}`} key={item}><span/></div>)}
+                </aside>
+                <div className="landing-dashboard-main">
+                  <div className="landing-dashboard-head"><div><small>Bom dia, Rodrigo</small><strong>Visão geral</strong></div><button><Sparkles size={13}/> Criar campanha</button></div>
+                  <div className="landing-metric-grid">
+                    <div><span><BriefcaseBusiness size={14}/></span><small>Marcas</small><strong>12</strong><em>+2 este mês</em></div>
+                    <div><span><Megaphone size={14}/></span><small>Anúncios</small><strong>148</strong><em>+28 esta semana</em></div>
+                    <div><span><TrendingUp size={14}/></span><small>Performance</small><strong>8.4x</strong><em>ROAS médio</em></div>
                   </div>
-                  <div className="fake-chart">
-                    {[44, 72, 53, 91, 66, 82, 58, 96].map((height, index) => <div className="fake-bar" style={{height: `${height}%`}} key={index} />)}
+                  <div className="landing-chart-card">
+                    <div><strong>Performance das campanhas</strong><small>Últimos 30 dias</small></div>
+                    <div className="animated-line-chart"><span/><span/><span/><span/><span/><span/><span/><span/></div>
+                  </div>
+                  <div className="landing-bottom-grid">
+                    <div className="landing-ai-card"><span><Bot size={16}/></span><div><strong>Copiloto MarkAI</strong><small>3 oportunidades encontradas</small></div><ChevronRight size={14}/></div>
+                    <div className="landing-credit-card"><Coins size={15}/><div><strong>10.840</strong><small>créditos disponíveis</small></div></div>
                   </div>
                 </div>
               </div>
@@ -81,75 +98,106 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="logo-strip">
-        <div className="container logo-strip-inner">
-          <strong>Cria para os canais onde os teus clientes já estão</strong>
-          <div className="channel-list"><span>Meta</span><span>Google</span><span>TikTok</span><span>LinkedIn</span></div>
+      <section className="premium-logo-strip">
+        <div className="container">
+          <span>Cria para todos os canais</span>
+          <div><strong>Meta</strong><strong>Google</strong><strong>TikTok</strong><strong>LinkedIn</strong><strong>Instagram</strong></div>
         </div>
       </section>
 
-      <section className="section" id="funcionalidades">
+      <section className="premium-stats-section">
+        <div className="container premium-stats-grid">
+          <div><strong>11</strong><span>modelos de IA</span></div>
+          <div><strong>4×</strong><span>mais rápido a produzir</span></div>
+          <div><strong>100%</strong><span>contexto de marca</span></div>
+          <div><strong>1</strong><span>plataforma para tudo</span></div>
+        </div>
+      </section>
+
+      <section className="premium-section" id="funcionalidades">
         <div className="container">
-          <div className="section-heading">
-            <span className="eyebrow">Tudo ligado</span>
-            <h2>Do briefing ao relatório, sem perder contexto.</h2>
-            <p>O MarkAI junta execução, estratégia e conhecimento de marca para reduzir ferramentas, retrabalho e decisões soltas.</p>
+          <div className="premium-section-heading centered">
+            <span className="premium-eyebrow"><Gem size={14}/> Uma plataforma verdadeiramente completa</span>
+            <h2>Tudo o que a tua agência precisa.<br/><span>Nada do que a atrasa.</span></h2>
+            <p>Uma experiência desenhada para substituir ferramentas soltas por um sistema elegante, inteligente e coerente.</p>
           </div>
-          <div className="feature-grid">
-            {features.map(({icon: Icon, title, text}) => (
-              <article className="feature-card" key={title}>
-                <div className="feature-icon"><Icon size={20}/></div>
+          <div className="premium-feature-grid">
+            {features.map(({ icon: Icon, title, text, className }, index) => (
+              <article className={`premium-feature-card ${className}`} key={title} style={{ animationDelay: `${index * 90}ms` }}>
+                <div className="premium-feature-icon"><Icon size={21}/></div>
+                <span className="feature-number">0{index + 1}</span>
                 <h3>{title}</h3><p>{text}</p>
+                <Link href="/register">Explorar <ArrowRight size={14}/></Link>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="section" id="modelos">
-        <div className="container">
-          <div className="cta-panel">
-            <Sparkles size={28} style={{marginBottom: 18}} />
-            <h2>Escolhe velocidade, qualidade e custo.</h2>
-            <p>Do GPT 5.6 Lua aos modelos de consumo elevado, cada geração mostra o custo antes de começar e respeita os limites do plano.</p>
-            <Link className="button button-primary" href="/register">Experimentar Ads Studio <Megaphone size={17}/></Link>
+      <section className="premium-section workflow-section" id="como-funciona">
+        <div className="container workflow-layout">
+          <div className="workflow-copy">
+            <span className="premium-eyebrow"><Zap size={14}/> Fluxo simples, resultado premium</span>
+            <h2>Do zero à campanha pronta em minutos.</h2>
+            <p>O MarkAI guia cada passo, mantém a marca consistente e mostra o custo antes de usar qualquer modelo.</p>
+            <Link className="button button-primary" href="/register">Experimentar o fluxo <ArrowRight size={16}/></Link>
+          </div>
+          <div className="workflow-steps">
+            {workflow.map((item) => <article key={item.number}><span>{item.number}</span><div><h3>{item.title}</h3><p>{item.text}</p></div></article>)}
           </div>
         </div>
       </section>
 
-      <section className="section" id="precos">
-        <div className="container">
-          <div className="section-heading">
-            <span className="eyebrow">Planos</span>
-            <h2>Começa pequeno. Escala com os clientes.</h2>
-            <p>Limites generosos nos planos pagos e possibilidade de comprar créditos extra quando precisares.</p>
+      <section className="premium-section model-showcase-section">
+        <div className="container model-showcase">
+          <div className="model-orbit">
+            <span className="model-core"><Sparkles size={28}/><strong>MarkAI</strong></span>
+            <span className="model-node node-one">GPT 5.6</span><span className="model-node node-two">Sonnet 5</span><span className="model-node node-three">Opus 5</span><span className="model-node node-four">Qwen 3.7</span>
           </div>
-          <div className="pricing-grid">
-            {plans.map((plan) => (
-              <article className={`price-card ${plan.featured ? "featured" : ""}`} key={plan.name}>
-                {plan.featured && <span className="price-badge">Mais escolhido</span>}
-                <h3>{plan.name}</h3>
-                <div className="price">{plan.price}<small>/mês</small></div>
-                <ul>
-                  <li><Check size={14}/>{plan.credits}</li>
-                  <li><Check size={14}/>{plan.brands}</li>
-                  <li><Check size={14}/>{plan.models}</li>
-                  <li><BadgeCheck size={14}/>Histórico e controlo de uso</li>
-                </ul>
-                <Link className={`button ${plan.featured ? "button-primary" : "button-secondary"}`} href="/register" style={{width: "100%"}}>Escolher {plan.name}</Link>
-              </article>
-            ))}
+          <div className="model-showcase-copy">
+            <span className="premium-eyebrow"><Layers3 size={14}/> Multi-modelo</span>
+            <h2>O modelo certo para cada trabalho.</h2>
+            <p>Escolhe rapidez, profundidade ou custo. O MarkAI mostra créditos, limites e disponibilidade antes de cada geração.</p>
+            <div className="model-benefits"><span><Zap size={15}/> Custo previsível</span><span><ShieldCheck size={15}/> Limites por plano</span><span><Globe2 size={15}/> Vários fornecedores</span></div>
           </div>
         </div>
       </section>
 
-      <footer className="site-footer">
-        <div className="container footer-inner">
-          <Logo />
-          <span>© 2026 MarkAI. Plataforma de marketing com IA.</span>
-          <span>Neon Postgres · Next.js · Vercel</span>
+      <section className="premium-section plans-landing-section" id="precos">
+        <div className="container">
+          <div className="premium-section-heading centered">
+            <span className="premium-eyebrow"><CrownIcon/> Cresce sem mudar de plataforma</span>
+            <h2>Um plano para cada fase da agência.</h2>
+            <p>Começa gratuitamente e faz upgrade quando precisares de mais marcas, equipa e poder de IA.</p>
+          </div>
+          <PlanSelector />
         </div>
+      </section>
+
+      <section className="premium-section landing-testimonial-section">
+        <div className="container testimonial-grid">
+          <article className="large-testimonial"><div className="quote-mark">“</div><p>O MarkAI transforma um briefing numa operação completa. A equipa deixa de saltar entre ferramentas e começa a trabalhar com o mesmo contexto.</p><div><span>RD</span><strong>Operação mais rápida<small>Estratégia, criação e aprovação ligadas</small></strong></div></article>
+          <div className="testimonial-results"><div><Users size={19}/><strong>Equipas alinhadas</strong><span>Uma fonte de verdade por marca.</span></div><div><TrendingUp size={19}/><strong>Mais margem</strong><span>Menos tempo perdido em tarefas repetitivas.</span></div><div><ShieldCheck size={19}/><strong>Mais controlo</strong><span>Limites e custos sempre visíveis.</span></div></div>
+        </div>
+      </section>
+
+      <section className="premium-final-cta">
+        <div className="premium-final-orb"/>
+        <div className="container">
+          <span className="landing-badge"><Sparkles size={13}/> O próximo nível da tua agência</span>
+          <h2>Cria melhor. Entrega mais rápido.<br/>Cresce com controlo.</h2>
+          <p>Começa com uma marca, 60 créditos e acesso imediato ao teu novo sistema operativo de marketing.</p>
+          <Link className="button button-primary landing-main-cta" href="/register">Criar conta gratuita <ArrowRight size={18}/></Link>
+        </div>
+      </section>
+
+      <footer className="site-footer premium-footer">
+        <div className="container footer-inner"><Logo /><span>© 2026 MarkAI. Marketing OS com inteligência artificial.</span><span>Neon · Next.js · Vercel</span></div>
       </footer>
     </main>
   );
+}
+
+function CrownIcon() {
+  return <Sparkles size={14}/>;
 }
