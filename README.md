@@ -84,6 +84,8 @@ Abre `http://localhost:3000`.
 3. Adiciona as variáveis `DATABASE_URL`, `JWT_SECRET` e, opcionalmente, as variáveis do gateway de IA.
 4. Faz o deploy.
 
+A produção é publicada a partir da branch `main` através da integração GitHub → Vercel.
+
 Não coloques segredos em variáveis com prefixo `NEXT_PUBLIC_`.
 
 ## Planos e créditos incluídos
