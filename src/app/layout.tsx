@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./auth-onboarding.css";
 import "./premium.css";
+import "./studio-v2-core.css";
+import "./studio-v2-chrome.css";
+import "./studio-v2-workspaces.css";
+import "./studio-v2-operations.css";
+import "./landing-v3.css";
 
 export const metadata: Metadata = {
   title: {

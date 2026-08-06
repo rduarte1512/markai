@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Sidebar, MobileMenu } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
 import { UpgradePopup } from "@/components/upgrade-popup";
+import { CommandCenter } from "@/components/command-center";
 import { requireAppContext } from "@/lib/auth";
 import { getSql } from "@/lib/db";
 
@@ -23,13 +24,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const allowance = Number(context.monthly_allowance);
 
   return (
-    <div className="dashboard-shell premium-dashboard-shell">
+    <div className="dashboard-shell premium-dashboard-shell studio-v2-shell">
       <Sidebar plan={context.plan_key} balance={balance} allowance={allowance} />
       <div className="dashboard-area">
         <Topbar workspaceName={context.workspace_name} userName={context.user_name} />
-        <main className="dashboard-content premium-dashboard-content">{children}</main>
+        <main className="dashboard-content premium-dashboard-content studio-v2-content">{children}</main>
       </div>
       <MobileMenu />
+      <CommandCenter />
       <UpgradePopup plan={context.plan_key} balance={balance} allowance={allowance} />
     </div>
   );
