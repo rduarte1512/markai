@@ -70,6 +70,32 @@ export async function getAppContext(): Promise<AppContext | null> {
   if (!session) return null;
 
   const sql = getSql();
+
+  await sql`
+    with expired as (
+      select workspace_id
+      from subscriptions
+      where workspace_id = ${session.workspaceId}
+        and cancel_at_period_end = true
+        and current_period_end <= now()
+    ), updated_workspace as (
+      update workspaces
+      set plan_key = 'free', updated_at = now()
+      where id in (select workspace_id from expired)
+      returning id
+    ), updated_subscription as (
+      update subscriptions
+      set plan_key = 'free', status = 'canceled', cancel_at_period_end = false, updated_at = now()
+      where workspace_id in (select workspace_id from expired)
+      returning workspace_id
+    )
+    update credit_wallets
+    set monthly_allowance = 60,
+        monthly_balance = least(monthly_balance, 60),
+        updated_at = now()
+    where workspace_id in (select workspace_id from expired)
+  `;
+
   const rows = (await sql`
     select
       u.id as user_id,
