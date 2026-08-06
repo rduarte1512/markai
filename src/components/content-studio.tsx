@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
-  FileText, Hash, Instagram, LayoutGrid, ListFilter, LoaderCircle,
+  Expand, FileText, Hash, Instagram, LayoutGrid, ListFilter, LoaderCircle,
   Mail, MoreHorizontal, Plus, Search, Sparkles, Target, Video, X,
 } from "lucide-react";
 import type { Brand } from "@/lib/types";
@@ -21,6 +21,8 @@ type ContentItem = {
   created_at: string;
 };
 
+type CalendarCell = { date: Date; inMonth: boolean };
+
 const columns = [
   { key: "idea", label: "Ideias", description: "Backlog criativo" },
   { key: "draft", label: "Em produção", description: "A desenvolver" },
@@ -37,8 +39,25 @@ const contentTypes = [
   { key: "seo_brief", label: "Brief SEO", icon: Search },
 ];
 
+const weekdays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+
 function typeIcon(type: string) {
   return contentTypes.find((item) => item.key === type)?.icon || FileText;
+}
+
+function dateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function calendarCells(month: Date): CalendarCell[] {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const mondayOffset = (first.getDay() + 6) % 7;
+  const start = new Date(month.getFullYear(), month.getMonth(), 1 - mondayOffset);
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    return { date, inMonth: date.getMonth() === month.getMonth() };
+  });
 }
 
 export function ContentStudio({ brands, initialItems }: { brands: Brand[]; initialItems: ContentItem[] }) {
@@ -55,6 +74,7 @@ export function ContentStudio({ brands, initialItems }: { brands: Brand[]; initi
   const [query, setQuery] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("all");
   const [view, setView] = useState<"board" | "calendar">("board");
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
 
   const visibleItems = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -65,6 +85,20 @@ export function ContentStudio({ brands, initialItems }: { brands: Brand[]; initi
     });
   }, [items, query, selectedBrand]);
 
+  const itemsByDate = useMemo(() => {
+    const map = new Map<string, ContentItem[]>();
+    for (const item of visibleItems) {
+      if (!item.scheduled_for) continue;
+      const date = new Date(item.scheduled_for);
+      if (Number.isNaN(date.getTime())) continue;
+      const key = dateKey(date);
+      map.set(key, [...(map.get(key) || []), item]);
+    }
+    return map;
+  }, [visibleItems]);
+
+  const cells = useMemo(() => calendarCells(calendarMonth), [calendarMonth]);
+  const monthLabel = new Intl.DateTimeFormat("pt-PT", { month: "long", year: "numeric" }).format(calendarMonth);
   const scheduledCount = items.filter((item) => item.status === "scheduled").length;
   const reviewCount = items.filter((item) => item.status === "review").length;
   const thisMonth = items.filter((item) => {
@@ -72,6 +106,15 @@ export function ContentStudio({ brands, initialItems }: { brands: Brand[]; initi
     const now = new Date();
     return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
   }).length;
+
+  function shiftMonth(offset: number) {
+    setCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
+  }
+
+  function openFullCalendar() {
+    setView("calendar");
+    window.setTimeout(() => document.getElementById("editorial-calendar")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }
 
   async function createItem(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,17 +156,23 @@ export function ContentStudio({ brands, initialItems }: { brands: Brand[]; initi
   }
 
   return (
-    <div className="content-os">
-      <section className="studio-hero content-hero">
+    <div className="content-os content-os-v3">
+      <section className="studio-hero content-hero content-hero-v3">
         <div>
           <span className="studio-kicker"><CalendarDays size={14}/> Content operating system</span>
           <h1>Planeia, produz e aprova conteúdo sem perder o ritmo.</h1>
           <p>Um pipeline editorial completo para transformar ideias em publicações consistentes com cada Brand Kit.</p>
           <div className="studio-hero-actions"><button className="button button-primary" onClick={() => setCreating(true)}><Plus size={16}/> Criar conteúdo</button><button className="button button-secondary"><Sparkles size={16}/> Gerar plano mensal</button></div>
         </div>
-        <div className="content-hero-calendar">
-          <header><button><ChevronLeft size={14}/></button><strong>Agosto 2026</strong><button><ChevronRight size={14}/></button></header>
-          <div className="mini-calendar-grid">{Array.from({ length: 14 }).map((_, index) => <span className={index === 5 || index === 9 || index === 12 ? "has-content" : ""} key={index}>{index + 10}</span>)}</div>
+        <div className="content-hero-calendar content-hero-calendar-v3">
+          <header><button onClick={() => shiftMonth(-1)} aria-label="Mês anterior"><ChevronLeft size={16}/></button><div><small>Calendário editorial</small><strong>{monthLabel}</strong></div><button onClick={() => shiftMonth(1)} aria-label="Mês seguinte"><ChevronRight size={16}/></button></header>
+          <div className="hero-calendar-weekdays">{weekdays.map((day) => <span key={day}>{day}</span>)}</div>
+          <div className="hero-calendar-grid">{cells.map(({ date, inMonth }) => {
+            const dayItems = itemsByDate.get(dateKey(date)) || [];
+            const today = dateKey(date) === dateKey(new Date());
+            return <button className={`${inMonth ? "" : "outside"} ${dayItems.length ? "has-content" : ""} ${today ? "today" : ""}`} key={dateKey(date)} onClick={() => { setScheduledFor(`${dateKey(date)}T09:00`); setCreating(true); }}><span>{date.getDate()}</span>{dayItems.length > 0 && <i>{dayItems.length}</i>}<em>{dayItems[0]?.title || ""}</em></button>;
+          })}</div>
+          <footer><span><i/> {scheduledCount} conteúdos agendados</span><button onClick={openFullCalendar}><Expand size={13}/> Abrir calendário grande</button></footer>
         </div>
       </section>
 
@@ -171,12 +220,13 @@ export function ContentStudio({ brands, initialItems }: { brands: Brand[]; initi
           })}
         </section>
       ) : (
-        <section className="full-calendar-view">
-          <header><button><ChevronLeft size={15}/></button><div><span>Calendário editorial</span><h2>Agosto 2026</h2></div><button><ChevronRight size={15}/></button></header>
-          <div className="calendar-weekdays">{["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map((day) => <span key={day}>{day}</span>)}</div>
-          <div className="calendar-month-grid">{Array.from({ length: 35 }).map((_, index) => {
-            const dayItems = visibleItems.filter((item) => item.scheduled_for && new Date(item.scheduled_for).getDate() === index + 1);
-            return <div key={index}><span>{index + 1 <= 31 ? index + 1 : ""}</span>{dayItems.slice(0, 2).map((item) => <button key={item.id}><i/>{item.title}</button>)}</div>;
+        <section className="full-calendar-view full-calendar-v3" id="editorial-calendar">
+          <header><button onClick={() => shiftMonth(-1)}><ChevronLeft size={17}/></button><div><span>Calendário editorial completo</span><h2>{monthLabel}</h2><p>Clica num dia para criar e agendar conteúdo.</p></div><button onClick={() => shiftMonth(1)}><ChevronRight size={17}/></button></header>
+          <div className="calendar-weekdays">{weekdays.map((day) => <span key={day}>{day}</span>)}</div>
+          <div className="calendar-month-grid">{cells.map(({ date, inMonth }) => {
+            const dayItems = itemsByDate.get(dateKey(date)) || [];
+            const today = dateKey(date) === dateKey(new Date());
+            return <div className={`${inMonth ? "" : "outside"} ${today ? "today" : ""}`} key={dateKey(date)}><button className="calendar-day-number" onClick={() => { setScheduledFor(`${dateKey(date)}T09:00`); setCreating(true); }}>{date.getDate()}<Plus size={12}/></button>{dayItems.slice(0, 3).map((item) => <button className={`calendar-event event-${item.status}`} key={item.id}><i/><span><strong>{item.title}</strong><small>{item.channel || item.brand_name}</small></span></button>)}{dayItems.length > 3 && <em>+{dayItems.length - 3} conteúdos</em>}</div>;
           })}</div>
         </section>
       )}
