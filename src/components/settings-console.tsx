@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
-  Bell, BriefcaseBusiness, CheckCircle2, ChevronRight, CircleAlert,
-  CreditCard, Database, Globe2, KeyRound, LockKeyhole, Mail, Moon,
-  Palette, PlugZap, Save, Server, ShieldCheck, SlidersHorizontal,
-  Sparkles, Sun, Users, Zap,
+  BarChart3, Bell, BriefcaseBusiness, CheckCircle2, ChevronRight,
+  CircleAlert, CreditCard, Database, Globe2, Instagram, KeyRound,
+  LockKeyhole, Mail, Moon, Palette, PlugZap, Save, Server,
+  ShieldCheck, SlidersHorizontal, Sparkles, Sun, Users, Zap,
 } from "lucide-react";
 import { CancelPlanButton } from "@/components/cancel-plan-button";
 import { PLAN_LABELS } from "@/lib/constants";
@@ -56,7 +57,7 @@ export function SettingsConsole({
     window.setTimeout(() => setSaved(false), 1800);
   }
 
-  const tabs: Array<{ key: Tab; label: string; icon: typeof BriefcaseBusiness }> = [
+  const tabs: Array<{ key: Tab; label: string; icon: LucideIcon }> = [
     { key: "workspace", label: "Workspace", icon: BriefcaseBusiness },
     { key: "team", label: "Equipa e acesso", icon: Users },
     { key: "integrations", label: "Integrações", icon: PlugZap },
@@ -117,14 +118,14 @@ export function SettingsConsole({
             <header className="settings-section-head"><div><span>Capacidade e cobrança</span><h2>Plano e faturação</h2><p>Consulta limites, renovação, utilização e método de pagamento.</p></div><Link className="button button-secondary button-sm" href="/dashboard/plans">Comparar planos</Link></header>
             <section className="billing-hero-card"><div className="billing-plan-icon"><Sparkles size={24}/></div><div><small>Plano atual</small><h2>{PLAN_LABELS[planKey]}</h2><p>{plan.credits.toLocaleString("pt-PT")} créditos por mês · {plan.brands} · {plan.seats}</p></div><div className="billing-plan-state"><span className={`subscription-status ${cancelAtPeriodEnd ? "warning" : "active"}`}>{cancelAtPeriodEnd ? "Cancelamento agendado" : "Ativo"}</span><small>{renewalDate ? `${cancelAtPeriodEnd ? "Termina" : "Renova"} a ${renewalDate}` : "Sem renovação"}</small></div></section>
             <div className="billing-detail-grid"><section className="settings-surface"><header><div><CreditCard size={17}/><span><strong>Método de pagamento</strong><small>Usado para renovações e créditos extra.</small></span></div><button>Editar</button></header><div className="payment-method"><span>VISA</span><div><strong>•••• •••• •••• 4242</strong><small>Expira 12/29</small></div><CheckCircle2 size={16}/></div></section><section className="settings-surface"><header><div><Zap size={17}/><span><strong>Utilização incluída</strong><small>Capacidade mensal do plano.</small></span></div><Link href="/dashboard/credits">Ver detalhes</Link></header><div className="billing-usage-row"><span><strong>{plan.credits.toLocaleString("pt-PT")}</strong><small>créditos mensais</small></span><span><strong>{plan.brands}</strong><small>capacidade de marcas</small></span></div></section></div>
-            <section className="settings-surface invoices-table"><header><div><FileInvoiceIcon/><span><strong>Faturas</strong><small>Histórico de pagamentos e documentos.</small></span></div></header><div className="invoice-empty"><CreditCard size={22}/><strong>Ainda não existem faturas.</strong><p>As cobranças reais aparecerão aqui quando o Stripe estiver ligado.</p></div></section>
+            <section className="settings-surface invoices-table"><header><div><CreditCard size={17}/><span><strong>Faturas</strong><small>Histórico de pagamentos e documentos.</small></span></div></header><div className="invoice-empty"><CreditCard size={22}/><strong>Ainda não existem faturas.</strong><p>As cobranças reais aparecerão aqui quando o Stripe estiver ligado.</p></div></section>
             {planKey === "free" ? <div className="free-upgrade-banner"><div><CreditCard size={20}/><span><strong>Leva o workspace para o próximo nível</strong><small>O Starter inclui 3.000 créditos, cinco marcas e relatórios.</small></span></div><Link className="button button-primary" href="/dashboard/checkout?plan=starter&cycle=annual">Fazer upgrade</Link></div> : <CancelPlanButton/>}
           </>}
 
           {tab === "preferences" && <>
             <header className="settings-section-head"><div><span>Experiência pessoal</span><h2>Preferências</h2><p>Personaliza a interface, notificações e comportamento do produto.</p></div><button className="button button-primary button-sm" onClick={savePreferences}>{saved ? <CheckCircle2 size={15}/> : <Save size={15}/>} {saved ? "Guardado" : "Guardar"}</button></header>
             <section className="settings-surface preference-section"><header><div><Palette size={17}/><span><strong>Aparência</strong><small>Escolhe como a aplicação é apresentada.</small></span></div></header><div className="theme-picker"><button className={darkMode ? "active" : ""} onClick={() => setDarkMode(true)}><span className="theme-preview dark"><Moon size={17}/></span><strong>Escuro</strong><small>Experiência premium atual</small></button><button className={!darkMode ? "active" : ""} onClick={() => setDarkMode(false)}><span className="theme-preview light"><Sun size={17}/></span><strong>Claro</strong><small>Preparado para futura ativação</small></button></div><PreferenceToggle icon={SlidersHorizontal} title="Modo compacto" description="Reduz espaços em tabelas, listas e cards." enabled={compactMode} onChange={setCompactMode}/></section>
-            <section className="settings-surface preference-section"><header><div><Bell size={17}/><span><strong>Notificações</strong><small>Define o que deve chegar ao teu email.</small></span></div></header><PreferenceToggle icon={BarChartIcon} title="Relatório semanal" description="Resumo de consumo, campanhas e oportunidades." enabled={weeklyReport} onChange={setWeeklyReport}/><PreferenceToggle icon={Sparkles} title="Novidades do produto" description="Funcionalidades, modelos e melhorias relevantes." enabled={productUpdates} onChange={setProductUpdates}/></section>
+            <section className="settings-surface preference-section"><header><div><Bell size={17}/><span><strong>Notificações</strong><small>Define o que deve chegar ao teu email.</small></span></div></header><PreferenceToggle icon={BarChart3} title="Relatório semanal" description="Resumo de consumo, campanhas e oportunidades." enabled={weeklyReport} onChange={setWeeklyReport}/><PreferenceToggle icon={Sparkles} title="Novidades do produto" description="Funcionalidades, modelos e melhorias relevantes." enabled={productUpdates} onChange={setProductUpdates}/></section>
           </>}
         </main>
       </div>
@@ -132,22 +133,10 @@ export function SettingsConsole({
   );
 }
 
-function IntegrationCard({ icon: Icon, name, description, connected }: { icon: typeof Database; name: string; description: string; connected: boolean }) {
+function IntegrationCard({ icon: Icon, name, description, connected }: { icon: LucideIcon; name: string; description: string; connected: boolean }) {
   return <article className="integration-card-v2"><header><span><Icon size={20}/></span>{connected ? <em className="connected"><CheckCircle2 size={13}/> Ligado</em> : <em><CircleAlert size={13}/> Por ligar</em>}</header><h3>{name}</h3><p>{description}</p><button>{connected ? "Gerir ligação" : "Ligar integração"}<ChevronRight size={14}/></button></article>;
 }
 
-function PreferenceToggle({ icon: Icon, title, description, enabled, onChange }: { icon: typeof Sparkles; title: string; description: string; enabled: boolean; onChange: (value: boolean) => void }) {
+function PreferenceToggle({ icon: Icon, title, description, enabled, onChange }: { icon: LucideIcon; title: string; description: string; enabled: boolean; onChange: (value: boolean) => void }) {
   return <div className="preference-row"><span><Icon size={16}/></span><div><strong>{title}</strong><small>{description}</small></div><button className={`toggle-switch ${enabled ? "active" : ""}`} onClick={() => onChange(!enabled)}><i/></button></div>;
-}
-
-function FileInvoiceIcon() {
-  return <CreditCard size={17}/>;
-}
-
-function BarChartIcon() {
-  return <Zap size={16}/>;
-}
-
-function Instagram({ size = 20 }: { size?: number }) {
-  return <Globe2 size={size}/>;
 }
