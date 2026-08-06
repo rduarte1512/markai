@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Sidebar, MobileMenu } from "@/components/sidebar";
 import { Topbar } from "@/components/topbar";
+import { UpgradePopup } from "@/components/upgrade-popup";
 import { requireAppContext } from "@/lib/auth";
 import { getSql } from "@/lib/db";
 
@@ -19,15 +20,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (Number(brands[0]?.count || 0) === 0) redirect("/onboarding");
 
   const balance = Number(context.monthly_balance) + Number(context.extra_balance);
+  const allowance = Number(context.monthly_allowance);
 
   return (
-    <div className="dashboard-shell">
-      <Sidebar plan={context.plan_key} balance={balance} allowance={Number(context.monthly_allowance)} />
+    <div className="dashboard-shell premium-dashboard-shell">
+      <Sidebar plan={context.plan_key} balance={balance} allowance={allowance} />
       <div className="dashboard-area">
         <Topbar workspaceName={context.workspace_name} userName={context.user_name} />
-        <main className="dashboard-content">{children}</main>
+        <main className="dashboard-content premium-dashboard-content">{children}</main>
       </div>
       <MobileMenu />
+      <UpgradePopup plan={context.plan_key} balance={balance} allowance={allowance} />
     </div>
   );
 }
