@@ -7,6 +7,8 @@ import "./studio-v2-chrome.css";
 import "./studio-v2-workspaces.css";
 import "./studio-v2-operations.css";
 import "./landing-v3.css";
+import "./studio-v3-polish.css";
+import { ScrollMotion } from "@/components/scroll-motion";
 
 export const metadata: Metadata = {
   title: {
@@ -19,7 +21,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt">
-      <body>{children}</body>
+      <body><ScrollMotion />{children}</body>
     </html>
   );
 }
