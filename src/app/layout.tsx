@@ -9,6 +9,7 @@ import "./studio-v2-operations.css";
 import "./landing-v3.css";
 import "./studio-v3-polish.css";
 import "./agent-readability.css";
+import "./dashboard-premium.css";
 import { ScrollMotion } from "@/components/scroll-motion";
 
 export const metadata: Metadata = {
