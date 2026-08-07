@@ -12,7 +12,7 @@ export function getWorkspaceLimit(planKey: PlanKey) {
   return WORKSPACE_LIMITS[planKey] ?? 1;
 }
 
-export async function getBillingWorkspaceForUser(userId: string, currentWorkspaceId: string) {
+export async function getBillingWorkspaceForWorkspace(currentWorkspaceId: string) {
   const sql = getSql();
   const rows = (await sql`
     select
@@ -20,9 +20,6 @@ export async function getBillingWorkspaceForUser(userId: string, currentWorkspac
       billing_w.id as billing_workspace_id,
       billing_w.plan_key as plan_key
     from workspaces current_w
-    join workspace_members current_m
-      on current_m.workspace_id = current_w.id
-     and current_m.user_id = ${userId}::uuid
     join lateral (
       select w2.id, w2.plan_key, w2.created_at
       from workspaces w2
@@ -51,4 +48,17 @@ export async function getBillingWorkspaceForUser(userId: string, currentWorkspac
   }>;
 
   return rows[0] ?? null;
+}
+
+export async function getBillingWorkspaceForUser(userId: string, currentWorkspaceId: string) {
+  const sql = getSql();
+  const access = await sql`
+    select 1
+    from workspace_members
+    where workspace_id = ${currentWorkspaceId}::uuid
+      and user_id = ${userId}::uuid
+    limit 1
+  `;
+  if (!access.length) return null;
+  return getBillingWorkspaceForWorkspace(currentWorkspaceId);
 }
