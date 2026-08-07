@@ -16,13 +16,13 @@ export const IMAGE_MODELS: Record<ImageModelKey, {
     label: "Nano Banana 2",
     providerModel: "gemini-3.1-flash-image",
     plans: ["free", "starter", "pro", "agency"],
-    baseCredits: { free: 90, starter: 45, pro: 35, agency: 30 },
+    baseCredits: { free: 45, starter: 28, pro: 23, agency: 20 },
   },
   "nano-banana-pro": {
     label: "Nano Banana Pro",
     providerModel: "gemini-3-pro-image",
     plans: ["pro", "agency"],
-    baseCredits: { free: 0, starter: 0, pro: 85, agency: 70 },
+    baseCredits: { free: 0, starter: 0, pro: 70, agency: 58 },
   },
 };
 
@@ -70,7 +70,7 @@ export const VIDEO_MODELS: Record<VideoModelKey, {
     label: "Gemini Omni Flash",
     providerModel: "gemini-omni-flash-preview",
     plans: ["pro", "agency"],
-    creditsPerSecond: 145,
+    creditsPerSecond: 275,
     resolutions: ["720p"],
     provider: "omni",
   },
