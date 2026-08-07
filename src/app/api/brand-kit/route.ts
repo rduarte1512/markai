@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { generateAiText, parseJsonFromAi } from "@/lib/ai";
 import { getSql } from "@/lib/db";
+import { getBillingWorkspaceForUser } from "@/lib/workspaces";
 
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Sessão expirada." }, { status: 401 });
 
   const sql = getSql();
+  const billing = await getBillingWorkspaceForUser(session.userId, session.workspaceId);
+  if (!billing) return NextResponse.json({ error: "Workspace inválido." }, { status: 403 });
+
   const modelKey = "gpt-5.6-lua";
   let charged = 0;
 
@@ -19,9 +23,9 @@ export async function POST(request: Request) {
 
     const chargeRows = (await sql`
       select consume_markai_credits(
-        ${session.workspaceId}::uuid, ${session.userId}::uuid, null,
+        ${billing.billing_workspace_id}::uuid, ${session.userId}::uuid, null,
         ${modelKey}, 'brand_kit_onboarding', 1,
-        ${JSON.stringify({ brandName: name })}::jsonb
+        ${JSON.stringify({ brandName: name, sourceWorkspaceId: session.workspaceId })}::jsonb
       ) as result
     `) as unknown as Array<{ result: { credits_used: number; balance_remaining: number } }>;
     charged = Number(chargeRows[0]?.result?.credits_used || 1);
@@ -43,7 +47,7 @@ export async function POST(request: Request) {
   } catch (cause) {
     if (charged > 0) {
       try {
-        await sql`select refund_markai_credits(${session.workspaceId}::uuid, ${session.userId}::uuid, ${modelKey}, ${charged}, 'brand_kit_generation_failed')`;
+        await sql`select refund_markai_credits(${billing.billing_workspace_id}::uuid, ${session.userId}::uuid, ${modelKey}, ${charged}, 'brand_kit_generation_failed')`;
       } catch (refundError) {
         console.error("Brand kit refund failed:", refundError);
       }
