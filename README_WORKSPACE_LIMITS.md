@@ -6,3 +6,5 @@
 - Agency: 15 workspaces
 
 Additional workspaces share the subscription, monthly credit wallet and model quotas of the billing workspace. Brand, campaign, funnel and content data remain isolated per workspace.
+
+Production deployment is validated through GitHub CI before release.
