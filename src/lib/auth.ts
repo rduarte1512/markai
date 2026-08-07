@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
 import { getSql } from "@/lib/db";
+import { getBillingWorkspaceForUser } from "@/lib/workspaces";
 import type { AppContext, SessionPayload } from "@/lib/types";
 
 export const SESSION_COOKIE = "markai_session";
@@ -70,18 +71,21 @@ export async function getAppContext(): Promise<AppContext | null> {
   if (!session) return null;
 
   const sql = getSql();
+  const billing = await getBillingWorkspaceForUser(session.userId, session.workspaceId);
+  if (!billing) return null;
 
   await sql`
     with expired as (
       select workspace_id
       from subscriptions
-      where workspace_id = ${session.workspaceId}
+      where workspace_id = ${billing.billing_workspace_id}::uuid
         and cancel_at_period_end = true
         and current_period_end <= now()
-    ), updated_workspace as (
+    ), updated_workspaces as (
       update workspaces
       set plan_key = 'free', updated_at = now()
-      where id in (select workspace_id from expired)
+      where owner_id = ${billing.owner_id}::uuid
+        and exists (select 1 from expired)
       returning id
     ), updated_subscription as (
       update subscriptions
@@ -93,7 +97,8 @@ export async function getAppContext(): Promise<AppContext | null> {
     set monthly_allowance = 60,
         monthly_balance = least(monthly_balance, 60),
         updated_at = now()
-    where workspace_id in (select workspace_id from expired)
+    where workspace_id = ${billing.billing_workspace_id}::uuid
+      and exists (select 1 from expired)
   `;
 
   const rows = (await sql`
@@ -104,7 +109,8 @@ export async function getAppContext(): Promise<AppContext | null> {
       w.id as workspace_id,
       w.name as workspace_name,
       w.slug as workspace_slug,
-      w.plan_key,
+      bw.id as billing_workspace_id,
+      bw.plan_key,
       cw.monthly_balance,
       cw.extra_balance,
       cw.monthly_allowance,
@@ -112,7 +118,8 @@ export async function getAppContext(): Promise<AppContext | null> {
     from users u
     join workspace_members wm on wm.user_id = u.id
     join workspaces w on w.id = wm.workspace_id
-    join credit_wallets cw on cw.workspace_id = w.id
+    join workspaces bw on bw.id = ${billing.billing_workspace_id}::uuid
+    join credit_wallets cw on cw.workspace_id = bw.id
     where u.id = ${session.userId}
       and w.id = ${session.workspaceId}
     limit 1
