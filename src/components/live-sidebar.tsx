@@ -12,10 +12,14 @@ export function LiveSidebar({
   plan,
   balance,
   allowance,
+  workspaceName,
+  userName,
 }: {
   plan: PlanKey;
   balance: number;
   allowance: number;
+  workspaceName: string;
+  userName: string;
 }) {
   const [liveBalance, setLiveBalance] = useState(balance);
 
@@ -75,5 +79,13 @@ export function LiveSidebar({
     };
   }, [refreshBalance]);
 
-  return <Sidebar plan={plan} balance={liveBalance} allowance={allowance} />;
+  return (
+    <Sidebar
+      plan={plan}
+      balance={liveBalance}
+      allowance={allowance}
+      workspaceName={workspaceName}
+      userName={userName}
+    />
+  );
 }
