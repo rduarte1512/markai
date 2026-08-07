@@ -71,7 +71,7 @@ export const VIDEO_MODELS: Record<VideoModelKey, {
     providerModel: "gemini-omni-flash-preview",
     plans: ["pro", "agency"],
     creditsPerSecond: 145,
-    resolutions: ["720p", "1080p"],
+    resolutions: ["720p"],
     provider: "omni",
   },
 };
