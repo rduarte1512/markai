@@ -9,5 +9,5 @@ export default async function CopilotPage({ searchParams }: { searchParams: Prom
   const query = await searchParams;
   const [brands, models] = await Promise.all([getBrands(context.workspace_id), getModels(context.workspace_id)]);
 
-  return <MarketingCopilot brands={brands} models={models} initialBrandId={query.brand} userName={context.user_name} />;
+  return <MarketingCopilot brands={brands} models={models} initialBrandId={query.brand} userName={context.user_name} planKey={context.plan_key} />;
 }

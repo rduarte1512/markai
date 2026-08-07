@@ -15,6 +15,7 @@ import "./settings-sidebar-scale.css";
 import "./topbar-premium-v2.css";
 import "./workspace-management.css";
 import "./workspace-editor-v2.css";
+import "./agent-tools-media.css";
 import { ScrollMotion } from "@/components/scroll-motion";
 import { ProductActionLinkBridge } from "@/components/product-action-link-bridge";
 

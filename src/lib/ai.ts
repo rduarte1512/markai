@@ -1,6 +1,10 @@
-type AiMessage = {
+export type AiContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+
+export type AiMessage = {
   role: "system" | "user" | "assistant";
-  content: string;
+  content: string | AiContentPart[];
 };
 
 type AiRequest = {
@@ -19,8 +23,13 @@ function getModelMap(): Record<string, string> {
   }
 }
 
+function contentToText(content: AiMessage["content"]) {
+  if (typeof content === "string") return content;
+  return content.map((part) => part.type === "text" ? part.text : "[imagem anexada]").join("\n");
+}
+
 function demoResponse(request: AiRequest) {
-  const lastMessage = request.messages.at(-1)?.content ?? "";
+  const lastMessage = contentToText(request.messages.at(-1)?.content ?? "");
 
   if (request.demoKind === "ads") {
     return JSON.stringify({
@@ -126,7 +135,6 @@ export async function generateAiText(request: AiRequest) {
 
     const text = data.choices?.[0]?.message?.content ?? data.output_text;
     if (!text) throw new Error("AI_GATEWAY_EMPTY_RESPONSE");
-
     return { text, demoMode: false };
   } finally {
     clearTimeout(timeout);

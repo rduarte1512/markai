@@ -1,3 +1,4 @@
+import { AdIntegrationsPanel } from "@/components/ad-integrations-panel";
 import { SettingsConsole } from "@/components/settings-console";
 import { WorkspaceCreateControl } from "@/components/workspace-create-control";
 import { WorkspaceIdentityEditor } from "@/components/workspace-identity-editor";
@@ -33,6 +34,7 @@ export default async function SettingsPage() {
     <div className="settings-workspace-stack">
       <WorkspaceIdentityEditor workspaceName={context.workspace_name} workspaceSlug={context.workspace_slug} />
       <WorkspaceCreateControl planKey={context.plan_key} ownedCount={ownedWorkspaceCount} />
+      <AdIntegrationsPanel />
       <SettingsConsole
         workspaceName={context.workspace_name}
         workspaceSlug={context.workspace_slug}
