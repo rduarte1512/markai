@@ -57,7 +57,7 @@ export async function getModels(workspaceId: string): Promise<ModelAccess[]> {
   `) as unknown as ModelAccess[];
 }
 
-export async function getDashboardStats(workspaceId: string) {
+export async function getDashboardStats(workspaceId: string, billingWorkspaceId: string = workspaceId) {
   const sql = getSql();
   const [summary, activity, byModel] = await Promise.all([
     sql`
@@ -65,7 +65,7 @@ export async function getDashboardStats(workspaceId: string) {
         (select count(*)::int from brands where workspace_id = ${workspaceId} and status = 'active') as brands,
         (select count(*)::int from campaigns c join brands b on b.id = c.brand_id where b.workspace_id = ${workspaceId}) as campaigns,
         (select count(*)::int from ads a join brands b on b.id = a.brand_id where b.workspace_id = ${workspaceId}) as ads,
-        (select coalesce(sum(-credits_delta), 0)::int from credit_ledger where workspace_id = ${workspaceId} and entry_type = 'usage' and created_at >= date_trunc('month', now())) as credits_used
+        (select coalesce(sum(-credits_delta), 0)::int from credit_ledger where workspace_id = ${billingWorkspaceId} and entry_type = 'usage' and created_at >= date_trunc('month', now())) as credits_used
     `,
     sql`
       select cl.id, cl.operation, cl.model_key, cl.credits_delta, cl.created_at,
@@ -73,7 +73,7 @@ export async function getDashboardStats(workspaceId: string) {
       from credit_ledger cl
       left join brands b on b.id = cl.brand_id
       left join model_catalog m on m.key = cl.model_key
-      where cl.workspace_id = ${workspaceId}
+      where cl.workspace_id = ${billingWorkspaceId}
       order by cl.created_at desc
       limit 8
     `,
@@ -82,7 +82,7 @@ export async function getDashboardStats(workspaceId: string) {
         coalesce(sum(-cl.credits_delta), 0)::int as credits
       from credit_ledger cl
       left join model_catalog m on m.key = cl.model_key
-      where cl.workspace_id = ${workspaceId}
+      where cl.workspace_id = ${billingWorkspaceId}
         and cl.entry_type = 'usage'
         and cl.created_at >= date_trunc('month', now())
       group by m.display_name, cl.model_key
