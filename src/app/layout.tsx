@@ -13,6 +13,7 @@ import "./dashboard-premium.css";
 import "./settings-readability.css";
 import "./settings-sidebar-scale.css";
 import "./topbar-premium-v2.css";
+import "./workspace-management.css";
 import { ScrollMotion } from "@/components/scroll-motion";
 
 export const metadata: Metadata = {
