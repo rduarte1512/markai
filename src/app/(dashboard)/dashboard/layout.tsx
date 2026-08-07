@@ -33,8 +33,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const allowance = Number(context.monthly_allowance);
 
   return (
-    <div className="dashboard-shell premium-dashboard-shell studio-v2-shell">
-      <LiveSidebar plan={context.plan_key} balance={balance} allowance={allowance} />
+    <div className="dashboard-shell premium-dashboard-shell studio-v2-shell command-sidebar-shell">
+      <LiveSidebar
+        plan={context.plan_key}
+        balance={balance}
+        allowance={allowance}
+        workspaceName={context.workspace_name}
+        userName={context.user_name}
+      />
       <div className="dashboard-area">
         <Topbar
           workspaceName={context.workspace_name}
