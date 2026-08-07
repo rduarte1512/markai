@@ -1,4 +1,5 @@
 import { getSql } from "@/lib/db";
+import { getBillingWorkspaceForWorkspace } from "@/lib/workspaces";
 import type { Brand, ModelAccess } from "@/lib/types";
 
 export async function getBrands(workspaceId: string): Promise<Brand[]> {
@@ -28,13 +29,15 @@ export async function getBrand(workspaceId: string, brandId: string): Promise<Br
 
 export async function getModels(workspaceId: string): Promise<ModelAccess[]> {
   const sql = getSql();
+  const billing = await getBillingWorkspaceForWorkspace(workspaceId);
+  const billingWorkspaceId = billing?.billing_workspace_id || workspaceId;
   return (await sql`
     with workspace_plan as (
-      select plan_key from workspaces where id = ${workspaceId}
+      select plan_key from workspaces where id = ${billingWorkspaceId}
     ), monthly_usage as (
       select model_key, count(*)::int as requests_used
       from credit_ledger
-      where workspace_id = ${workspaceId}
+      where workspace_id = ${billingWorkspaceId}
         and entry_type = 'usage'
         and created_at >= date_trunc('month', now())
       group by model_key
@@ -59,13 +62,15 @@ export async function getModels(workspaceId: string): Promise<ModelAccess[]> {
 
 export async function getDashboardStats(workspaceId: string) {
   const sql = getSql();
+  const billing = await getBillingWorkspaceForWorkspace(workspaceId);
+  const billingWorkspaceId = billing?.billing_workspace_id || workspaceId;
   const [summary, activity, byModel] = await Promise.all([
     sql`
       select
         (select count(*)::int from brands where workspace_id = ${workspaceId} and status = 'active') as brands,
         (select count(*)::int from campaigns c join brands b on b.id = c.brand_id where b.workspace_id = ${workspaceId}) as campaigns,
         (select count(*)::int from ads a join brands b on b.id = a.brand_id where b.workspace_id = ${workspaceId}) as ads,
-        (select coalesce(sum(-credits_delta), 0)::int from credit_ledger where workspace_id = ${workspaceId} and entry_type = 'usage' and created_at >= date_trunc('month', now())) as credits_used
+        (select coalesce(sum(-credits_delta), 0)::int from credit_ledger where workspace_id = ${billingWorkspaceId} and entry_type = 'usage' and created_at >= date_trunc('month', now())) as credits_used
     `,
     sql`
       select cl.id, cl.operation, cl.model_key, cl.credits_delta, cl.created_at,
@@ -73,7 +78,7 @@ export async function getDashboardStats(workspaceId: string) {
       from credit_ledger cl
       left join brands b on b.id = cl.brand_id
       left join model_catalog m on m.key = cl.model_key
-      where cl.workspace_id = ${workspaceId}
+      where cl.workspace_id = ${billingWorkspaceId}
       order by cl.created_at desc
       limit 8
     `,
@@ -82,7 +87,7 @@ export async function getDashboardStats(workspaceId: string) {
         coalesce(sum(-cl.credits_delta), 0)::int as credits
       from credit_ledger cl
       left join model_catalog m on m.key = cl.model_key
-      where cl.workspace_id = ${workspaceId}
+      where cl.workspace_id = ${billingWorkspaceId}
         and cl.entry_type = 'usage'
         and cl.created_at >= date_trunc('month', now())
       group by m.display_name, cl.model_key
@@ -113,6 +118,8 @@ export async function getDashboardStats(workspaceId: string) {
 
 export async function getCreditHistory(workspaceId: string) {
   const sql = getSql();
+  const billing = await getBillingWorkspaceForWorkspace(workspaceId);
+  const billingWorkspaceId = billing?.billing_workspace_id || workspaceId;
   return (await sql`
     select cl.id, cl.entry_type, cl.operation, cl.credits_delta,
       cl.balance_after, cl.created_at, b.name as brand_name,
@@ -120,7 +127,7 @@ export async function getCreditHistory(workspaceId: string) {
     from credit_ledger cl
     left join brands b on b.id = cl.brand_id
     left join model_catalog m on m.key = cl.model_key
-    where cl.workspace_id = ${workspaceId}
+    where cl.workspace_id = ${billingWorkspaceId}
     order by cl.created_at desc
     limit 50
   `) as unknown as Array<{

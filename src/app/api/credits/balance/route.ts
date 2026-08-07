@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getSql } from "@/lib/db";
+import { getBillingWorkspaceForUser } from "@/lib/workspaces";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +12,11 @@ export async function GET() {
     return NextResponse.json({ error: "Sessão expirada." }, { status: 401 });
   }
 
+  const billing = await getBillingWorkspaceForUser(session.userId, session.workspaceId);
+  if (!billing) return NextResponse.json({ error: "Workspace inválido." }, { status: 403 });
+
   const sql = getSql();
+  await sql`select ensure_monthly_credit_reset(${billing.billing_workspace_id}::uuid)`;
   const rows = (await sql`
     select
       monthly_balance,
@@ -20,7 +25,7 @@ export async function GET() {
       monthly_balance + extra_balance as balance,
       updated_at
     from credit_wallets
-    where workspace_id = ${session.workspaceId}::uuid
+    where workspace_id = ${billing.billing_workspace_id}::uuid
     limit 1
   `) as unknown as Array<{
     monthly_balance: number;

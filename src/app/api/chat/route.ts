@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { generateAiText } from "@/lib/ai";
 import { getSql } from "@/lib/db";
+import { getBillingWorkspaceForUser } from "@/lib/workspaces";
 
 export const runtime = "nodejs";
 
@@ -10,6 +11,9 @@ export async function POST(request: Request) {
   if (!session) return NextResponse.json({ error: "Sessão expirada." }, { status: 401 });
 
   const sql = getSql();
+  const billing = await getBillingWorkspaceForUser(session.userId, session.workspaceId);
+  if (!billing) return NextResponse.json({ error: "Workspace inválido." }, { status: 403 });
+
   let charged = 0;
   let modelKey = "";
 
@@ -45,9 +49,9 @@ export async function POST(request: Request) {
 
     const chargeRows = (await sql`
       select consume_markai_credits(
-        ${session.workspaceId}::uuid, ${session.userId}::uuid, ${brandId}::uuid,
+        ${billing.billing_workspace_id}::uuid, ${session.userId}::uuid, ${brandId}::uuid,
         ${modelKey}, 'marketing_copilot', 1,
-        ${JSON.stringify({ conversationId })}::jsonb
+        ${JSON.stringify({ conversationId, sourceWorkspaceId: session.workspaceId })}::jsonb
       ) as result
     `) as unknown as Array<{ result: { credits_used: number; balance_remaining: number } }>;
     const charge = chargeRows[0]?.result;
@@ -84,7 +88,7 @@ export async function POST(request: Request) {
   } catch (cause) {
     if (charged > 0 && modelKey) {
       try {
-        await sql`select refund_markai_credits(${session.workspaceId}::uuid, ${session.userId}::uuid, ${modelKey}, ${charged}, 'copilot_generation_failed')`;
+        await sql`select refund_markai_credits(${billing.billing_workspace_id}::uuid, ${session.userId}::uuid, ${modelKey}, ${charged}, 'copilot_generation_failed')`;
       } catch (refundError) {
         console.error("Copilot refund failed:", refundError);
       }

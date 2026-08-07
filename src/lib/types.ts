@@ -13,6 +13,7 @@ export type AppContext = {
   workspace_id: string;
   workspace_name: string;
   workspace_slug: string;
+  billing_workspace_id: string;
   plan_key: PlanKey;
   monthly_balance: number;
   extra_balance: number;
