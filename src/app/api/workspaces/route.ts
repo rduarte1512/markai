@@ -18,7 +18,7 @@ function slugify(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 42) || "workspace";
+    .slice(0, 48) || "workspace";
 }
 
 export async function POST(request: Request) {
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const slug = `${slugify(name)}-${randomUUID().slice(0, 6)}`;
+    const slug = `${slugify(name).slice(0, 42)}-${randomUUID().slice(0, 6)}`;
     const rows = (await sql`
       with created as (
         insert into workspaces(owner_id, name, slug, plan_key)
@@ -91,5 +91,64 @@ export async function POST(request: Request) {
   } catch (cause) {
     console.error("Workspace creation error:", cause);
     return NextResponse.json({ error: "Não foi possível criar o workspace." }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "Sessão expirada." }, { status: 401 });
+
+  try {
+    const body = (await request.json().catch(() => null)) as { name?: string; slug?: string } | null;
+    const name = String(body?.name || "").trim();
+    const requestedSlug = String(body?.slug || "").trim();
+    const slug = slugify(requestedSlug);
+
+    if (name.length < 2 || name.length > 70) {
+      return NextResponse.json({ error: "O nome do workspace deve ter entre 2 e 70 caracteres." }, { status: 400 });
+    }
+    if (requestedSlug.length < 2 || slug.length < 2) {
+      return NextResponse.json({ error: "A URL do workspace deve ter pelo menos 2 caracteres." }, { status: 400 });
+    }
+
+    const sql = getSql();
+    const access = (await sql`
+      select w.id, w.owner_id
+      from workspaces w
+      join workspace_members wm on wm.workspace_id = w.id
+      where w.id = ${session.workspaceId}::uuid
+        and wm.user_id = ${session.userId}::uuid
+      limit 1
+    `) as unknown as Array<{ id: string; owner_id: string }>;
+
+    if (!access[0]) return NextResponse.json({ error: "Workspace não encontrado." }, { status: 404 });
+    if (access[0].owner_id !== session.userId) {
+      return NextResponse.json({ error: "Só o proprietário pode editar as informações do workspace." }, { status: 403 });
+    }
+
+    const duplicate = await sql`
+      select 1
+      from workspaces
+      where slug = ${slug}
+        and id <> ${session.workspaceId}::uuid
+      limit 1
+    `;
+    if (duplicate.length) {
+      return NextResponse.json({ error: "Esta URL já está a ser usada por outro workspace." }, { status: 409 });
+    }
+
+    const rows = (await sql`
+      update workspaces
+      set name = ${name}, slug = ${slug}, updated_at = now()
+      where id = ${session.workspaceId}::uuid
+        and owner_id = ${session.userId}::uuid
+      returning id, name, slug, updated_at
+    `) as unknown as Array<{ id: string; name: string; slug: string; updated_at: string }>;
+
+    if (!rows[0]) return NextResponse.json({ error: "Não foi possível atualizar o workspace." }, { status: 403 });
+    return NextResponse.json({ ok: true, workspace: rows[0] });
+  } catch (cause) {
+    console.error("Workspace update error:", cause);
+    return NextResponse.json({ error: "Não foi possível guardar as alterações do workspace." }, { status: 500 });
   }
 }

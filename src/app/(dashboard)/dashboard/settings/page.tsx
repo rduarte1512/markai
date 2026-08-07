@@ -1,5 +1,6 @@
 import { SettingsConsole } from "@/components/settings-console";
 import { WorkspaceCreateControl } from "@/components/workspace-create-control";
+import { WorkspaceIdentityEditor } from "@/components/workspace-identity-editor";
 import { requireAppContext } from "@/lib/auth";
 import { getSql } from "@/lib/db";
 
@@ -30,6 +31,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="settings-workspace-stack">
+      <WorkspaceIdentityEditor workspaceName={context.workspace_name} workspaceSlug={context.workspace_slug} />
       <WorkspaceCreateControl planKey={context.plan_key} ownedCount={ownedWorkspaceCount} />
       <SettingsConsole
         workspaceName={context.workspace_name}
