@@ -25,6 +25,7 @@ import {
 import { getInitials } from "@/lib/format";
 import { PLAN_LABELS } from "@/lib/constants";
 import type { PlanKey } from "@/lib/types";
+import { WorkspaceQuickCreate } from "@/components/workspace-quick-create";
 
 type WorkspaceOption = {
   id: string;
@@ -242,6 +243,7 @@ export function Topbar({
                   );
                 })}
               </div>
+              <WorkspaceQuickCreate planKey={planKey} workspaceCount={workspaces.length} />
               <Link href="/dashboard/settings" className="workspace-manage-link" onClick={closeMenus}>
                 <Settings size={15}/> Gerir workspace
               </Link>
