@@ -137,6 +137,17 @@ export function Sidebar({
     });
   }
 
+  function toggleQuickCreate() {
+    if (collapsed) {
+      setCollapsed(false);
+      window.localStorage.setItem("markai:sidebar-collapsed", "false");
+      document.documentElement.dataset.sidebarCollapsed = "false";
+      window.setTimeout(() => setQuickCreateOpen(true), 120);
+      return;
+    }
+    setQuickCreateOpen((value) => !value);
+  }
+
   return (
     <aside className={`sidebar premium-sidebar command-sidebar${collapsed ? " is-collapsed" : ""}`}>
       <div className="command-sidebar-brand">
@@ -167,7 +178,7 @@ export function Sidebar({
         <button
           type="button"
           className={`command-quick-create${quickCreateOpen ? " open" : ""}`}
-          onClick={() => setQuickCreateOpen((value) => !value)}
+          onClick={toggleQuickCreate}
           aria-expanded={quickCreateOpen}
           title={collapsed ? "Criar" : undefined}
         >
