@@ -11,6 +11,7 @@ export type PlanDefinition = {
   credits: number;
   brands: string;
   seats: string;
+  workspaceLimit: number;
   modelAccess: string;
   badge?: string;
   highlighted?: boolean;
@@ -28,15 +29,18 @@ export const PLANS: PlanDefinition[] = [
     credits: 60,
     brands: "1 marca",
     seats: "1 utilizador",
+    workspaceLimit: 1,
     modelAccess: "Modelos económicos",
     features: [
       "60 créditos por mês",
+      "1 workspace",
       "Ads Studio essencial",
       "Copiloto em modo limitado",
       "Brand Kit para uma marca",
       "Histórico de 7 dias",
     ],
     limits: [
+      "Sem workspaces adicionais",
       "Sem relatórios avançados",
       "Sem agendamento social",
       "Sem portal de cliente",
@@ -52,10 +56,12 @@ export const PLANS: PlanDefinition[] = [
     credits: 3000,
     brands: "5 marcas",
     seats: "3 utilizadores",
+    workspaceLimit: 2,
     modelAccess: "Modelos baixos e médios",
     badge: "Melhor para começar",
     features: [
       "3.000 créditos por mês",
+      "Até 2 workspaces",
       "5 Brand Kits completos",
       "Ads Studio e variações A/B",
       "Funis e calendário de conteúdo",
@@ -73,11 +79,13 @@ export const PLANS: PlanDefinition[] = [
     credits: 12000,
     brands: "20 marcas",
     seats: "10 utilizadores",
+    workspaceLimit: 5,
     modelAccess: "Todos os modelos premium",
     badge: "Mais escolhido",
     highlighted: true,
     features: [
       "12.000 créditos por mês",
+      "Até 5 workspaces",
       "20 marcas e 10 utilizadores",
       "Modelos premium e de alto consumo",
       "Relatórios completos e SEO",
@@ -96,10 +104,12 @@ export const PLANS: PlanDefinition[] = [
     credits: 50000,
     brands: "Marcas ilimitadas",
     seats: "50 utilizadores",
+    workspaceLimit: 15,
     modelAccess: "Acesso máximo a todos os modelos",
     badge: "Escala máxima",
     features: [
       "50.000 créditos por mês",
+      "Até 15 workspaces",
       "Marcas ilimitadas",
       "50 lugares de equipa",
       "White-label e portal personalizado",
