@@ -15,6 +15,7 @@ import "./settings-sidebar-scale.css";
 import "./topbar-premium-v2.css";
 import "./workspace-management.css";
 import { ScrollMotion } from "@/components/scroll-motion";
+import { ProductActionLinkBridge } from "@/components/product-action-link-bridge";
 
 export const metadata: Metadata = {
   title: {
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt">
-      <body><ScrollMotion />{children}</body>
+      <body><ScrollMotion /><ProductActionLinkBridge />{children}</body>
     </html>
   );
 }
