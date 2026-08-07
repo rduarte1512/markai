@@ -1,0 +1,114 @@
+/* Settings sidebar scale ------------------------------------------------ */
+.settings-console-grid{
+  grid-template-columns:320px minmax(0,1fr);
+  gap:22px;
+}
+
+.settings-console .settings-nav-v2{
+  width:320px;
+  min-width:320px;
+  padding:18px;
+  border-radius:24px;
+}
+
+.settings-console .settings-account{
+  min-height:92px;
+  padding:15px 12px 19px;
+  gap:14px;
+}
+
+.settings-console .settings-account>span{
+  width:58px;
+  height:58px;
+  border-radius:16px;
+  font-size:16px;
+}
+
+.settings-console .settings-account strong{
+  font-size:17px;
+  line-height:1.2;
+}
+
+.settings-console .settings-account small{
+  margin-top:5px;
+  font-size:13px;
+  line-height:1.35;
+}
+
+.settings-console .settings-nav-v2 nav{
+  gap:9px;
+}
+
+.settings-console .settings-nav-v2 nav button{
+  min-height:58px;
+  padding:0 15px;
+  grid-template-columns:22px 1fr 18px;
+  gap:12px;
+  border-radius:15px;
+  font-size:15px;
+}
+
+.settings-console .settings-nav-v2 nav button span{
+  font-size:15px;
+  font-weight:650;
+}
+
+.settings-console .settings-nav-v2 nav button svg:first-child{
+  width:19px;
+  height:19px;
+}
+
+.settings-console .settings-nav-v2 nav button svg:last-child{
+  width:16px;
+  height:16px;
+}
+
+.settings-console .settings-plan-mini{
+  min-height:86px;
+  margin-top:20px;
+  padding:15px 14px;
+  border-radius:18px;
+  grid-template-columns:46px 1fr auto;
+  gap:12px;
+}
+
+.settings-console .settings-plan-mini>span{
+  width:44px;
+  height:44px;
+  border-radius:13px;
+}
+
+.settings-console .settings-plan-mini small{
+  font-size:12px;
+}
+
+.settings-console .settings-plan-mini strong{
+  margin-top:2px;
+  font-size:18px;
+  line-height:1.15;
+}
+
+.settings-console .settings-plan-mini a{
+  font-size:13px;
+  font-weight:750;
+}
+
+@media (max-width:1200px){
+  .settings-console-grid{
+    grid-template-columns:280px minmax(0,1fr);
+  }
+  .settings-console .settings-nav-v2{
+    width:280px;
+    min-width:280px;
+  }
+}
+
+@media (max-width:900px){
+  .settings-console-grid{
+    grid-template-columns:1fr;
+  }
+  .settings-console .settings-nav-v2{
+    width:100%;
+    min-width:0;
+  }
+}
