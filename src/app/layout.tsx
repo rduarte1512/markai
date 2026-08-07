@@ -16,8 +16,10 @@ import "./topbar-premium-v2.css";
 import "./workspace-management.css";
 import "./workspace-editor-v2.css";
 import "./agent-tools-media.css";
+import "./conversation-actions.css";
 import { ScrollMotion } from "@/components/scroll-motion";
 import { ProductActionLinkBridge } from "@/components/product-action-link-bridge";
+import { ConversationActionsBridge } from "@/components/conversation-actions-bridge";
 
 export const metadata: Metadata = {
   title: {
@@ -30,7 +32,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt">
-      <body><ScrollMotion /><ProductActionLinkBridge />{children}</body>
+      <body><ScrollMotion /><ProductActionLinkBridge /><ConversationActionsBridge />{children}</body>
     </html>
   );
 }
