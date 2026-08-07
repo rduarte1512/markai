@@ -98,7 +98,7 @@ export function estimateAttachmentBytes(attachment: AgentAttachment) {
     const base64 = attachment.dataUrl.split(",")[1] || "";
     return Math.ceil((base64.length * 3) / 4);
   }
-  if (attachment.text) return Buffer.byteLength(attachment.text, "utf8");
+  if (attachment.text) return new TextEncoder().encode(attachment.text).length;
   return Math.max(0, Number(attachment.size || 0));
 }
 
