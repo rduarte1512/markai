@@ -18,6 +18,7 @@ import "./workspace-editor-v2.css";
 import "./agent-tools-media.css";
 import "./conversation-actions.css";
 import "./sidebar-command-center.css";
+import "./checkout-payment-methods.css";
 import { ScrollMotion } from "@/components/scroll-motion";
 import { ProductActionLinkBridge } from "@/components/product-action-link-bridge";
 import { ConversationActionsBridge } from "@/components/conversation-actions-bridge";
