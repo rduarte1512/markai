@@ -1,35 +1,32 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { getSql } from "@/lib/db";
+import {
+  encodeDemoPaymentProvider,
+  isBillingPaymentMethod,
+  sanitizeCardBrand,
+  sanitizeExpiry,
+  sanitizeLast4,
+} from "@/lib/billing-payment";
 import { getPlan } from "@/lib/plans";
 import { getBillingWorkspaceForUser } from "@/lib/workspaces";
 import type { PlanKey } from "@/lib/types";
 
 const PAID_PLANS: PlanKey[] = ["starter", "pro", "agency"];
-const SUBSCRIPTION_PAYMENT_METHODS = [
-  "card",
-  "apple_pay",
-  "google_pay",
-  "paypal",
-  "klarna",
-  "link",
-  "sepa_debit",
-  "ideal",
-  "revolut_pay",
-] as const;
-
-type SubscriptionPaymentMethod = (typeof SUBSCRIPTION_PAYMENT_METHODS)[number];
-
-function isSubscriptionPaymentMethod(value: string): value is SubscriptionPaymentMethod {
-  return SUBSCRIPTION_PAYMENT_METHODS.includes(value as SubscriptionPaymentMethod);
-}
 
 export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Sessão expirada." }, { status: 401 });
 
   try {
-    const body = (await request.json()) as { plan?: string; cycle?: string; paymentMethod?: string };
+    const body = (await request.json()) as {
+      plan?: string;
+      cycle?: string;
+      paymentMethod?: string;
+      cardBrand?: string;
+      cardLast4?: string;
+      cardExpiry?: string;
+    };
     const planKey = body.plan as PlanKey;
     const cycle = body.cycle === "annual" ? "annual" : "monthly";
     const paymentMethod = String(body.paymentMethod || "card");
@@ -38,7 +35,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Seleciona um plano pago válido." }, { status: 400 });
     }
 
-    if (!isSubscriptionPaymentMethod(paymentMethod)) {
+    if (!isBillingPaymentMethod(paymentMethod)) {
       if (paymentMethod === "mb_way") {
         return NextResponse.json(
           { error: "MB WAY não suporta renovação automática de subscrições neste fluxo. Escolhe outro método de pagamento." },
@@ -60,6 +57,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Só o proprietário pode alterar o plano desta conta." }, { status: 403 });
     }
 
+    const safeCardDetails = paymentMethod === "card"
+      ? {
+          brand: sanitizeCardBrand(body.cardBrand),
+          last4: sanitizeLast4(body.cardLast4),
+          expiry: sanitizeExpiry(body.cardExpiry),
+        }
+      : undefined;
+
+    if (paymentMethod === "card" && (!safeCardDetails?.last4 || !safeCardDetails.expiry)) {
+      return NextResponse.json({ error: "Confirma o número e a validade do cartão." }, { status: 400 });
+    }
+
     const plan = getPlan(planKey);
     const sql = getSql();
     const now = new Date();
@@ -76,12 +85,14 @@ export async function POST(request: Request) {
       where owner_id = ${billing.owner_id}::uuid
     `;
 
+    const provider = encodeDemoPaymentProvider(paymentMethod, safeCardDetails);
+
     await sql`
       insert into subscriptions (
         workspace_id, plan_key, status, provider, current_period_start,
         current_period_end, cancel_at_period_end, updated_at
       ) values (
-        ${billing.billing_workspace_id}::uuid, ${planKey}, 'active', ${`markai_demo:${paymentMethod}`}, ${now.toISOString()},
+        ${billing.billing_workspace_id}::uuid, ${planKey}, 'active', ${provider}, ${now.toISOString()},
         ${subscriptionEnd.toISOString()}, false, now()
       )
       on conflict (workspace_id) do update set

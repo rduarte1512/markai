@@ -9,7 +9,9 @@ import {
   LockKeyhole, Mail, Moon, Palette, PlugZap, Save, Server,
   ShieldCheck, SlidersHorizontal, Sparkles, Sun, Users, Zap,
 } from "lucide-react";
+import { BillingPaymentMethodPanel } from "@/components/billing-payment-method-panel";
 import { CancelPlanButton } from "@/components/cancel-plan-button";
+import type { BillingPaymentSummary } from "@/lib/billing-payment";
 import { PLAN_LABELS } from "@/lib/constants";
 import { getPlan } from "@/lib/plans";
 import type { PlanKey } from "@/lib/types";
@@ -25,6 +27,7 @@ export function SettingsConsole({
   gatewayReady,
   renewalDate,
   cancelAtPeriodEnd,
+  paymentMethod,
 }: {
   workspaceName: string;
   workspaceSlug: string;
@@ -34,6 +37,7 @@ export function SettingsConsole({
   gatewayReady: boolean;
   renewalDate: string | null;
   cancelAtPeriodEnd: boolean;
+  paymentMethod: BillingPaymentSummary | null;
 }) {
   const [tab, setTab] = useState<Tab>("workspace");
   const [compactMode, setCompactMode] = useState(false);
@@ -116,9 +120,9 @@ export function SettingsConsole({
 
           {tab === "billing" && <>
             <header className="settings-section-head"><div><span>Capacidade e cobrança</span><h2>Plano e faturação</h2><p>Consulta limites, renovação, utilização e método de pagamento.</p></div><Link className="button button-secondary button-sm" href="/dashboard/plans">Comparar planos</Link></header>
-            <section className="billing-hero-card"><div className="billing-plan-icon"><Sparkles size={24}/></div><div><small>Plano atual</small><h2>{PLAN_LABELS[planKey]}</h2><p>{plan.credits.toLocaleString("pt-PT")} créditos por mês · {plan.brands} · {plan.seats}</p></div><div className="billing-plan-state"><span className={`subscription-status ${cancelAtPeriodEnd ? "warning" : "active"}`}>{cancelAtPeriodEnd ? "Cancelamento agendado" : "Ativo"}</span><small>{renewalDate ? `${cancelAtPeriodEnd ? "Termina" : "Renova"} a ${renewalDate}` : "Sem renovação"}</small></div></section>
-            <div className="billing-detail-grid"><section className="settings-surface"><header><div><CreditCard size={17}/><span><strong>Método de pagamento</strong><small>Usado para renovações e créditos extra.</small></span></div><button>Editar</button></header><div className="payment-method"><span>VISA</span><div><strong>•••• •••• •••• 4242</strong><small>Expira 12/29</small></div><CheckCircle2 size={16}/></div></section><section className="settings-surface"><header><div><Zap size={17}/><span><strong>Utilização incluída</strong><small>Capacidade mensal do plano.</small></span></div><Link href="/dashboard/credits">Ver detalhes</Link></header><div className="billing-usage-row"><span><strong>{plan.credits.toLocaleString("pt-PT")}</strong><small>créditos mensais</small></span><span><strong>{plan.brands}</strong><small>capacidade de marcas</small></span></div></section></div>
-            <section className="settings-surface invoices-table"><header><div><CreditCard size={17}/><span><strong>Faturas</strong><small>Histórico de pagamentos e documentos.</small></span></div></header><div className="invoice-empty"><CreditCard size={22}/><strong>Ainda não existem faturas.</strong><p>As cobranças reais aparecerão aqui quando o Stripe estiver ligado.</p></div></section>
+            <section className="billing-hero-card"><div className="billing-plan-icon"><Sparkles size={24}/></div><div><small>Plano atual</small><h2>{PLAN_LABELS[planKey]}</h2><p>{plan.credits.toLocaleString("pt-PT")} créditos por mês · {plan.brands} · {plan.seats}</p></div><div className="billing-plan-state"><span className={`subscription-status ${cancelAtPeriodEnd ? "warning" : "active"}`}>{cancelAtPeriodEnd ? "Cancelamento pendente" : "Ativo"}</span><small>{renewalDate ? `${cancelAtPeriodEnd ? "Termina" : "Renova"} a ${renewalDate}` : "Sem renovação"}</small></div></section>
+            <div className="billing-detail-grid"><BillingPaymentMethodPanel initialPaymentMethod={paymentMethod}/><section className="settings-surface"><header><div><Zap size={17}/><span><strong>Utilização incluída</strong><small>Capacidade mensal do plano.</small></span></div><Link href="/dashboard/credits">Ver detalhes</Link></header><div className="billing-usage-row"><span><strong>{plan.credits.toLocaleString("pt-PT")}</strong><small>créditos mensais</small></span><span><strong>{plan.brands}</strong><small>capacidade de marcas</small></span></div></section></div>
+            <section className="settings-surface invoices-table"><header><div><CreditCard size={17}/><span><strong>Faturas</strong><small>Histórico de pagamentos e documentos.</small></span></div></header><div className="invoice-empty"><CreditCard size={22}/><strong>Ainda não existem faturas.</strong><p>As cobranças reais aparecerão aqui quando o provider de pagamentos estiver ligado.</p></div></section>
             {planKey === "free" ? <div className="free-upgrade-banner"><div><CreditCard size={20}/><span><strong>Leva o workspace para o próximo nível</strong><small>O Starter inclui 3.000 créditos, cinco marcas e relatórios.</small></span></div><Link className="button button-primary" href="/dashboard/checkout?plan=starter&cycle=annual">Fazer upgrade</Link></div> : <CancelPlanButton/>}
           </>}
 
