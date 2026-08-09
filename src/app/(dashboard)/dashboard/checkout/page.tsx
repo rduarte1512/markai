@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Check, Gem, LockKeyhole, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Gem, ShieldCheck, Sparkles } from "lucide-react";
 import { CheckoutForm } from "@/components/checkout-form";
 import { requireAppContext } from "@/lib/auth";
 import { getPlan, getPlanPrice, type BillingCycle } from "@/lib/plans";
@@ -13,6 +13,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const cycle: BillingCycle = query.cycle === "monthly" ? "monthly" : "annual";
   const monthlyPrice = getPlanPrice(plan, cycle);
   const total = cycle === "annual" ? monthlyPrice * 12 : monthlyPrice;
+  const cycleLabel = cycle === "annual" ? "Anual" : "Mensal";
 
   if (plan.key === "free") {
     return (
@@ -26,33 +27,48 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   }
 
   return (
-    <div className="checkout-page-shell">
-      <Link className="checkout-back" href="/dashboard/plans"><ArrowLeft size={15}/> Voltar aos planos</Link>
-      <div className="checkout-grid">
-        <section className="checkout-summary-panel">
-          <span className="premium-eyebrow"><LockKeyhole size={14}/> Checkout seguro</span>
-          <h1>Confirma o teu upgrade para {plan.name}.</h1>
-          <p>Desbloqueia mais marcas, modelos premium e ferramentas para a tua agência crescer.</p>
+    <div className="co-page">
+      <header className="co-topbar">
+        <div className="co-topbar-inner co-wrap">
+          <Link className="co-back" href="/dashboard/plans"><ArrowLeft size={15}/> Voltar aos planos</Link>
+          <span className="co-trust-pill"><ShieldCheck size={13}/> Pagamento protegido</span>
+        </div>
+      </header>
 
-          <div className="checkout-plan-summary">
-            <div><span>Plano escolhido</span><strong>{plan.name}</strong></div>
-            <div><span>Periodicidade</span><strong>{cycle === "annual" ? "Anual" : "Mensal"}</strong></div>
-            <div><span>Créditos mensais</span><strong>{plan.credits.toLocaleString("pt-PT")}</strong></div>
+      <main className="co-main">
+        <div className="co-brandhead">
+          <span className="co-logo"><span className="co-logo-mark"><Sparkles size={17} strokeWidth={2.4}/></span>MarkAI</span>
+        </div>
+
+        <h1 className="co-title">Falta pouco para ativares o {plan.name}.</h1>
+        <p className="co-sub">Upgrade <strong>{cycleLabel.toLowerCase()}</strong> · equivale a <strong>{monthlyPrice}€/mês</strong> · ativação imediata</p>
+
+        <details className="co-summary-card">
+          <summary className="co-summary-toggle">
+            <span>
+              <span className="co-plan-tag">{plan.name}</span>
+              <span className="co-summary-meta">{cycleLabel} · {plan.credits.toLocaleString("pt-PT")} créditos/mês</span>
+            </span>
+            <span className="co-summary-price">{total.toLocaleString("pt-PT")}€<small>total hoje</small></span>
+            <span className="co-summary-caret"><ChevronDown size={16}/></span>
+          </summary>
+
+          <div className="co-summary-detail">
+            <ul className="co-features">
+              {plan.features.slice(0, 6).map((feature) => <li key={feature}><Check size={15}/>{feature}</li>)}
+            </ul>
+            <div className="co-detail-row"><span>Periodicidade</span><strong>{cycleLabel}</strong></div>
+            <div className="co-detail-row"><span>Créditos mensais</span><strong>{plan.credits.toLocaleString("pt-PT")}</strong></div>
+            <div className="co-detail-row"><span>Renovação automática</span><strong>Ativada</strong></div>
+            <div className="co-detail-total"><span>Total hoje</span><strong>{total.toLocaleString("pt-PT")}€</strong></div>
+            <div className="co-guarantee"><ShieldCheck size={17}/><span><strong>Sem risco.</strong> Cancela nas definições antes da próxima renovação e não voltas a pagar nada.</span></div>
           </div>
-
-          <ul className="checkout-benefits">
-            {plan.features.slice(0, 6).map((feature) => <li key={feature}><Check size={16}/>{feature}</li>)}
-          </ul>
-
-          <div className="checkout-total-card">
-            <div><span>Total de hoje</span><small>{cycle === "annual" ? `Equivale a ${monthlyPrice}€/mês` : "Renovação mensal"}</small></div>
-            <strong>{total}€</strong>
-          </div>
-          <div className="checkout-guarantee"><ShieldCheck size={20}/><span><strong>Sem risco</strong><small>Podes cancelar nas definições antes da próxima renovação.</small></span></div>
-        </section>
+        </details>
 
         <CheckoutForm plan={plan} cycle={cycle} email={context.email} />
-      </div>
+
+        <p className="co-legal">Ao continuar, aceitas os termos de serviço e a política de privacidade da MarkAI. Precisas de ajuda? Podes gerir a tua conta nas definições.</p>
+      </main>
     </div>
   );
 }
