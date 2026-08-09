@@ -61,8 +61,9 @@ export function BillingPaymentMethodPanel({
   active,
 }: {
   initialPaymentMethod: BillingPaymentSummary | null;
-  active: boolean;
+  active?: boolean;
 }) {
+  const isActive = active ?? Boolean(initialPaymentMethod);
   const [paymentMethod, setPaymentMethod] = useState<BillingPaymentSummary | null>(initialPaymentMethod);
   const [editing, setEditing] = useState(false);
   const [method, setMethod] = useState<BillingPaymentMethod>(initialPaymentMethod?.type || "card");
@@ -107,13 +108,13 @@ export function BillingPaymentMethodPanel({
   return (
     <section className="settings-surface billing-payment-panel">
       <header>
-        <div><CreditCard size={17}/><span><strong>Método de pagamento</strong><small>{active ? "Usado para renovações e créditos extra." : "O plano Free não precisa de método de pagamento."}</small></span></div>
-        {active && <button type="button" onClick={() => { setEditing((value) => !value); setMessage(""); }}>
+        <div><CreditCard size={17}/><span><strong>Método de pagamento</strong><small>{isActive ? "Usado para renovações e créditos extra." : "O plano Free não precisa de método de pagamento."}</small></span></div>
+        {isActive && <button type="button" onClick={() => { setEditing((value) => !value); setMessage(""); }}>
           {editing ? <><X size={14}/> Fechar</> : "Editar"}
         </button>}
       </header>
 
-      {!active ? (
+      {!isActive ? (
         <div className="billing-payment-empty">
           <CreditCard size={20}/>
           <div><strong>Nenhum método necessário</strong><small>Quando fizeres upgrade, o método escolhido no checkout aparecerá aqui.</small></div>
@@ -136,7 +137,7 @@ export function BillingPaymentMethodPanel({
         )
       )}
 
-      {active && editing && (
+      {isActive && editing && (
         <div className="billing-payment-editor">
           <label>
             <span>Método</span>
@@ -181,7 +182,7 @@ export function BillingPaymentMethodPanel({
         </div>
       )}
 
-      {active && !editing && message && <div className="studio-success-banner">{message}</div>}
+      {isActive && !editing && message && <div className="studio-success-banner">{message}</div>}
     </section>
   );
 }
