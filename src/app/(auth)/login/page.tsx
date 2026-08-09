@@ -1,67 +1,107 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BarChart3, Check, Layers3, ShieldCheck, Sparkles, WandSparkles } from "lucide-react";
+import {
+  Bell,
+  CalendarDays,
+  ChevronRight,
+  Coins,
+  Layers3,
+  LayoutDashboard,
+  Megaphone,
+  Plus,
+  Settings2,
+  Workflow,
+  Bot,
+} from "lucide-react";
 import { Logo } from "@/components/logo";
-import { AuthForm } from "@/components/auth-form";
+import { LoginV2Form } from "@/components/login-v2-form";
+import styles from "@/components/login-v2.module.css";
 import { getSession } from "@/lib/auth";
 
 export const metadata = { title: "Entrar" };
+
+const navItems = [
+  { label: "Visão geral", icon: LayoutDashboard },
+  { label: "Brand Kits", icon: Layers3, active: true },
+  { label: "Ads Studio", icon: Megaphone },
+  { label: "Agente", icon: Bot },
+  { label: "Funis", icon: Workflow },
+  { label: "Content OS", icon: CalendarDays },
+];
+
+const kits = [
+  { initials: "MD", name: "Maison Digital", tone: "Premium · Minimalista", status: "Em produção", color: "teal", channels: ["Meta", "Google", "TikTok"] },
+  { initials: "LS", name: "Lumen Studio", tone: "Criativo · Editorial", status: "Ativo", color: "amber", channels: ["Instagram", "LinkedIn"] },
+  { initials: "BD", name: "Braga Digital", tone: "Performance · Data", status: "Ativo", color: "emerald", channels: ["Google", "Meta"] },
+  { initials: "AL", name: "Alta Living", tone: "Elegante · Premium", status: "Em revisão", color: "rose", channels: ["Pinterest", "Meta"] },
+];
 
 export default async function LoginPage() {
   if (await getSession()) redirect("/dashboard");
 
   return (
-    <main className="auth-page auth-page-premium">
-      <section className="auth-art auth-art-premium">
-        <div className="auth-art-top">
-          <Logo />
-          <span className="auth-live-badge"><span /> Marketing OS com IA</span>
-        </div>
-
-        <div className="auth-hero-copy">
-          <span className="auth-kicker"><Sparkles size={15} /> Tudo o que a tua agência precisa</span>
-          <h1>Transforma estratégia em trabalho pronto.</h1>
-          <p>Gere marcas, cria campanhas e toma decisões com um copiloto que conhece todo o contexto do cliente.</p>
-
-          <div className="auth-feature-list">
-            <div><span><Layers3 size={18} /></span><div><strong>Brand Kits centralizados</strong><small>Tom, público, valores e decisões sempre ligados.</small></div></div>
-            <div><span><WandSparkles size={18} /></span><div><strong>Produção com IA</strong><small>Anúncios, conteúdos e funis em poucos minutos.</small></div></div>
-            <div><span><BarChart3 size={18} /></span><div><strong>Controlo real</strong><small>Créditos, modelos e utilização visíveis em tempo real.</small></div></div>
+    <main className={styles.page}>
+      <div className={styles.backdrop} aria-hidden="true">
+        <aside className={styles.sidebar}>
+          <div className={styles.brand}><Logo /></div>
+          <span className={styles.navLabel}>Workspace</span>
+          {navItems.map(({ label, icon: Icon, active }) => (
+            <span className={`${styles.navItem} ${active ? styles.navItemActive : ""}`} key={label}>
+              <Icon size={16} strokeWidth={1.8} /> {label}
+            </span>
+          ))}
+          <span className={styles.navLabel}>Sistema</span>
+          <span className={styles.navItem}><Coins size={16} strokeWidth={1.8} /> Créditos</span>
+          <span className={styles.navItem}><Settings2 size={16} strokeWidth={1.8} /> Definições</span>
+          <div className={styles.planCard}>
+            <strong>Plano Free</strong>
+            <small>60 créditos por mês</small>
+            <span>Ver planos <ChevronRight size={12} /></span>
           </div>
-        </div>
+        </aside>
 
-        <div className="auth-proof-card">
-          <div className="auth-proof-stars">★★★★★</div>
-          <p>“Agora a equipa entra, escolhe a marca e começa a produzir sem perder contexto entre ferramentas.”</p>
-          <div><span className="auth-proof-avatar">M</span><span><strong>Marketing mais organizado</strong><small>Uma plataforma, todas as marcas</small></span></div>
-        </div>
+        <section className={styles.shellMain}>
+          <header className={styles.topbar}>
+            <span className={styles.crumb}>Lumen Studio <ChevronRight size={12} /> <strong>Visão geral</strong></span>
+            <div className={styles.topActions}>
+              <span className={styles.iconButton}><Bell size={16} /></span>
+              <span className={styles.avatar}>M</span>
+            </div>
+          </header>
 
-        <div className="auth-orb auth-orb-one" />
-        <div className="auth-orb auth-orb-two" />
-      </section>
+          <div className={styles.shellContent}>
+            <span className={styles.eyebrow}>Workspace · Lumen Studio</span>
+            <div className={styles.shellHead}>
+              <h2>Brand Kits</h2>
+              <span className={styles.shellNew}><Plus size={13} /> Novo brand</span>
+            </div>
+            <p className={styles.shellSub}>Tom, público, valores e decisões de cada marca, sempre ligados.</p>
 
-      <section className="auth-form-side auth-form-side-premium">
-        <div className="auth-mobile-logo"><Logo /></div>
-        <div className="auth-card auth-card-premium">
-          <div className="auth-card-icon"><ShieldCheck size={22} /></div>
-          <span className="auth-card-kicker">Área segura</span>
-          <h2>Bem-vindo de volta</h2>
-          <p>Entra para continuar a trabalhar nas tuas marcas e campanhas.</p>
-
-          <AuthForm mode="login" />
-
-          <div className="auth-divider"><span>ou</span></div>
-          <div className="auth-switch auth-switch-centered">
-            Ainda não tens conta? <Link href="/register">Criar conta gratuitamente</Link>
+            <div className={styles.kits}>
+              {kits.map((kit, index) => (
+                <article className={styles.kit} key={kit.name}>
+                  <div className={styles.kitTop}>
+                    <span className={`${styles.kitAvatar} ${styles[kit.color as keyof typeof styles]}`}>{kit.initials}</span>
+                    <span className={`${styles.kitBadge} ${index === 0 ? styles.kitBadgeGreen : ""}`}>{kit.status}</span>
+                  </div>
+                  <h3>{kit.name}</h3>
+                  <p>{kit.tone}</p>
+                  <div className={styles.chips}>{kit.channels.map((channel) => <span key={channel}>{channel}</span>)}</div>
+                </article>
+              ))}
+            </div>
           </div>
+        </section>
+      </div>
 
-          <div className="auth-trust-row">
-            <span><Check size={13} /> Ligação segura</span>
-            <span><Check size={13} /> Dados protegidos</span>
-          </div>
-        </div>
-        <div className="auth-legal">Ao entrar, confirmas que aceitas os termos e a política de privacidade.</div>
-      </section>
+      <div className={styles.overlay}>
+        <section className={styles.card} aria-label="Iniciar sessão">
+          <div className={styles.cardBrand}><Logo /></div>
+          <h1>Bem-vindo de <em>volta</em></h1>
+          <p className={styles.cardSub}>Entra para continuar a trabalhar nas tuas marcas e campanhas.</p>
+          <LoginV2Form />
+          <p className={styles.legal}>Ao entrar, confirmas que aceitas os termos e a política de privacidade.</p>
+        </section>
+      </div>
     </main>
   );
 }
