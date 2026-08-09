@@ -31,10 +31,12 @@ export default async function SettingsPage() {
     provider: string | null;
   }>)[0];
   const ownedWorkspaceCount = Number((workspaceCounts as unknown as Array<{ count: number }>)[0]?.count || 1);
-  const renewalDate = subscription?.current_period_end
-    ? new Intl.DateTimeFormat("pt-PT", { dateStyle: "long" }).format(new Date(subscription.current_period_end))
-    : null;
-  const paymentMethod = parseDemoPaymentProvider(subscription?.provider);
+  const renewalDate = context.plan_key === "free"
+    ? null
+    : subscription?.current_period_end
+      ? new Intl.DateTimeFormat("pt-PT", { dateStyle: "long" }).format(new Date(subscription.current_period_end))
+      : null;
+  const paymentMethod = context.plan_key === "free" ? null : parseDemoPaymentProvider(subscription?.provider);
 
   return (
     <div className="settings-workspace-stack">
@@ -49,7 +51,7 @@ export default async function SettingsPage() {
         planKey={context.plan_key}
         gatewayReady={gatewayReady}
         renewalDate={renewalDate}
-        cancelAtPeriodEnd={Boolean(subscription?.cancel_at_period_end)}
+        cancelAtPeriodEnd={context.plan_key === "free" ? false : Boolean(subscription?.cancel_at_period_end)}
         paymentMethod={paymentMethod}
       />
     </div>
