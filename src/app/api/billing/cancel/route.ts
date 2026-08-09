@@ -42,6 +42,7 @@ export async function POST() {
       update subscriptions
       set plan_key = 'free',
           status = 'canceled',
+          provider = 'markai_demo_free',
           cancel_at_period_end = false,
           current_period_end = now(),
           updated_at = now()
