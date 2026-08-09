@@ -41,10 +41,11 @@ export async function POST() {
     await sql`
       update subscriptions
       set plan_key = 'free',
-          status = 'canceled',
+          status = 'active',
           provider = 'markai_demo_free',
           cancel_at_period_end = false,
-          current_period_end = now(),
+          current_period_start = ${now.toISOString()},
+          current_period_end = ${walletEnd.toISOString()},
           updated_at = now()
       where workspace_id = ${billing.billing_workspace_id}::uuid
     `;
