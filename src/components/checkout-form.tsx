@@ -87,6 +87,12 @@ function formatCardNumber(value: string) {
   return digits.replace(/(\d{4})(?=\d)/g, "$1 ");
 }
 
+function formatExpiry(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+}
+
 function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -97,6 +103,7 @@ export function CheckoutForm({ plan, cycle, email }: { plan: PlanDefinition; cyc
   const [error, setError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodId>("card");
   const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
   const [stage, setStage] = useState<PaymentStage>("form");
   const [pendingProgress, setPendingProgress] = useState(0);
   const [pendingSeconds, setPendingSeconds] = useState(0);
@@ -130,6 +137,9 @@ export function CheckoutForm({ plan, cycle, email }: { plan: PlanDefinition; cyc
     event.preventDefault();
     if (selectedMethod.disabled) return;
 
+    const cardDigits = cardNumber.replace(/\D/g, "");
+    const cardLast4 = paymentMethod === "card" ? cardDigits.slice(-4) : undefined;
+
     setLoading(true);
     setError("");
     setPendingProgress(0);
@@ -147,7 +157,14 @@ export function CheckoutForm({ plan, cycle, email }: { plan: PlanDefinition; cyc
       const responsePromise = fetch("/api/billing/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: plan.key, cycle, paymentMethod }),
+        body: JSON.stringify({
+          plan: plan.key,
+          cycle,
+          paymentMethod,
+          cardBrand: paymentMethod === "card" ? cardBrand.id : undefined,
+          cardLast4,
+          cardExpiry: paymentMethod === "card" ? cardExpiry : undefined,
+        }),
       }).then(async (response) => {
         const data = (await response.json()) as { error?: string };
         if (!response.ok) throw new Error(data.error || "Não foi possível ativar o plano.");
@@ -273,7 +290,19 @@ export function CheckoutForm({ plan, cycle, email }: { plan: PlanDefinition; cyc
           <div className="co-form-row">
             <div className="co-field">
               <label htmlFor="cardExpiry">Validade</label>
-              <input className="co-input" id="cardExpiry" type="text" inputMode="numeric" placeholder="MM/AA" maxLength={5} autoComplete="cc-exp" required />
+              <input
+                className="co-input"
+                id="cardExpiry"
+                type="text"
+                inputMode="numeric"
+                placeholder="MM/AA"
+                maxLength={5}
+                autoComplete="cc-exp"
+                value={cardExpiry}
+                onChange={(event) => setCardExpiry(formatExpiry(event.target.value))}
+                pattern="(0[1-9]|1[0-2])/\d{2}"
+                required
+              />
             </div>
             <div className="co-field">
               <label htmlFor="cardCvc">CVC</label>
@@ -306,7 +335,7 @@ export function CheckoutForm({ plan, cycle, email }: { plan: PlanDefinition; cyc
         <span><Check size={14}/>Cancela quando quiseres</span>
       </div>
 
-      <p className="co-demo-note">O checkout mantém a lógica atual da MarkAI. Os métodos apresentados em produção dependem da disponibilidade e configuração do provider de pagamentos.</p>
+      <p className="co-demo-note">A MarkAI guarda apenas o tipo do método, a bandeira, os últimos 4 dígitos e a validade para apresentar a faturação. O número completo e o CVC nunca são guardados.</p>
     </form>
   );
 }
