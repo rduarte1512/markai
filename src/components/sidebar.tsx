@@ -20,6 +20,7 @@ import {
   Plus,
   Settings,
   Sparkles,
+  TrendingUp,
   WandSparkles,
   Workflow,
   Zap,
@@ -45,6 +46,7 @@ const navigationGroups = [
     label: "Visão geral",
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/dashboard/growth", label: "Growth OS", icon: TrendingUp },
     ],
   },
   {
@@ -74,6 +76,7 @@ const navigationGroups = [
 
 const quickCreateItems = [
   { href: "/dashboard/brands/new", label: "Nova marca", description: "Criar Brand Kit", icon: BriefcaseBusiness },
+  { href: "/dashboard/growth?tab=campaigns", label: "Nova campanha", description: "Campaign OS", icon: TrendingUp },
   { href: "/dashboard/ads", label: "Novo anúncio", description: "Criativo e copy", icon: Megaphone },
   { href: "/dashboard/content", label: "Novo conteúdo", description: "Conteúdo multi-canal", icon: FilePlus2 },
   { href: "/dashboard/funnels", label: "Novo funil", description: "Jornada de conversão", icon: Workflow },
@@ -87,7 +90,8 @@ function initials(value: string) {
 }
 
 function isActiveRoute(pathname: string, href: string) {
-  return href === "/dashboard" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
+  const cleanHref = href.split("?")[0];
+  return cleanHref === "/dashboard" ? pathname === cleanHref : pathname === cleanHref || pathname.startsWith(`${cleanHref}/`);
 }
 
 export function Sidebar({
@@ -246,7 +250,7 @@ export function Sidebar({
         {plan === "free" ? (
           <Link className="command-upgrade-card" href="/dashboard/plans" title={collapsed ? "Desbloquear MarkAI Pro" : undefined}>
             <span><Crown size={15} /></span>
-            <div><strong>Desbloqueia o MarkAI</strong><small>Mais IA, vídeo e workspaces</small></div>
+            <div><strong>Desbloqueia o MarkAI</strong><small>Growth OS, IA, portais e publicação</small></div>
             <ChevronRight size={13} />
           </Link>
         ) : (
