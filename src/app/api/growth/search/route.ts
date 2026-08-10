@@ -6,13 +6,15 @@ import { cleanText, enforceFeature, enforceLimit, generateGrowthAi, GrowthError,
 export const runtime = "nodejs";
 
 function privateIp(ip: string) {
-  if (ip === "127.0.0.1" || ip === "::1" || ip === "0.0.0.0") return true;
-  if (ip.startsWith("10.") || ip.startsWith("192.168.") || ip.startsWith("169.254.")) return true;
-  if (ip.startsWith("172.")) {
-    const second = Number(ip.split(".")[1]);
+  const normalized = ip.toLowerCase();
+  if (normalized === "127.0.0.1" || normalized === "::1" || normalized === "0.0.0.0") return true;
+  if (normalized.startsWith("::ffff:")) return privateIp(normalized.slice(7));
+  if (normalized.startsWith("10.") || normalized.startsWith("192.168.") || normalized.startsWith("169.254.")) return true;
+  if (normalized.startsWith("172.")) {
+    const second = Number(normalized.split(".")[1]);
     if (second >= 16 && second <= 31) return true;
   }
-  if (ip.startsWith("fc") || ip.startsWith("fd") || ip.startsWith("fe80:")) return true;
+  if (normalized.startsWith("fc") || normalized.startsWith("fd") || normalized.startsWith("fe80:")) return true;
   return false;
 }
 
@@ -26,6 +28,33 @@ async function safeUrl(raw: string) {
   const addresses = await lookup(host, { all: true, verbatim: true });
   if (!addresses.length || addresses.some((item) => privateIp(item.address))) throw new GrowthError("O domínio resolve para uma rede não permitida.");
   return url;
+}
+
+async function fetchAuditableHtml(initial: URL, signal: AbortSignal) {
+  let current = initial;
+  for (let redirect = 0; redirect <= 4; redirect += 1) {
+    const response = await fetch(current, {
+      headers: { "User-Agent": "MarkAI-SearchIntelligence/1.0 (+SEO-GEO-audit)" },
+      redirect: "manual",
+      signal,
+      cache: "no-store",
+    });
+
+    if ([301, 302, 303, 307, 308].includes(response.status)) {
+      if (redirect === 4) throw new GrowthError("A página tem demasiados redirects.", 422);
+      const location = response.headers.get("location");
+      if (!location) throw new GrowthError("Redirect sem destino válido.", 422);
+      const next = new URL(location, current);
+      current = await safeUrl(next.toString());
+      continue;
+    }
+
+    if (!response.ok) throw new GrowthError(`A página devolveu HTTP ${response.status}.`, 422);
+    const type = response.headers.get("content-type") || "";
+    if (!type.includes("text/html")) throw new GrowthError("O URL não devolveu uma página HTML.", 422);
+    return { html: (await response.text()).slice(0, 1_500_000), finalUrl: current };
+  }
+  throw new GrowthError("Não foi possível abrir a página.", 422);
 }
 
 function first(html: string, regex: RegExp) {
@@ -60,21 +89,15 @@ export async function POST(request: Request) {
     `) as unknown as Array<{ count: number }>;
     enforceLimit(Number(countRows[0]?.count || 0), rule.limit, `Atingiste o limite do plano: ${rule.label}.`);
 
-    const url = await safeUrl(rawUrl);
+    const initialUrl = await safeUrl(rawUrl);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 18_000);
     let html = "";
+    let finalUrl = initialUrl;
     try {
-      const response = await fetch(url, {
-        headers: { "User-Agent": "MarkAI-SearchIntelligence/1.0 (+SEO-GEO-audit)" },
-        redirect: "follow",
-        signal: controller.signal,
-        cache: "no-store",
-      });
-      if (!response.ok) throw new GrowthError(`A página devolveu HTTP ${response.status}.`, 422);
-      const type = response.headers.get("content-type") || "";
-      if (!type.includes("text/html")) throw new GrowthError("O URL não devolveu uma página HTML.", 422);
-      html = (await response.text()).slice(0, 1_500_000);
+      const fetched = await fetchAuditableHtml(initialUrl, controller.signal);
+      html = fetched.html;
+      finalUrl = fetched.finalUrl;
     } finally {
       clearTimeout(timeout);
     }
@@ -140,14 +163,14 @@ export async function POST(request: Request) {
         brandId,
         operation: "search_intelligence_beta",
         system: "És o especialista SEO/GEO do MarkAI. Responde em português de Portugal. A funcionalidade está em Beta. Usa apenas os dados fornecidos, não afirmes rankings reais nem presença real em motores de IA. Prioriza 5 ações concretas por impacto.",
-        user: `Marca: ${brand.name}; setor: ${brand.industry || "não definido"}; público: ${brand.audience || "não definido"}; URL: ${url.toString()}; keywords: ${keywords.join(", ")}; SEO score: ${seoScore}; GEO readiness score: ${geoScore}; métricas: ${JSON.stringify(metrics)}.`,
+        user: `Marca: ${brand.name}; setor: ${brand.industry || "não definido"}; público: ${brand.audience || "não definido"}; URL: ${finalUrl.toString()}; keywords: ${keywords.join(", ")}; SEO score: ${seoScore}; GEO readiness score: ${geoScore}; métricas: ${JSON.stringify(metrics)}.`,
       });
       insights = generated.text;
     }
 
     const rows = await sql`
       insert into search_audits(brand_id, created_by, url, keywords, seo_score, geo_score, metrics, insights, status)
-      values (${brandId}::uuid, ${session.userId}::uuid, ${url.toString()}, ${JSON.stringify(keywords)}::jsonb, ${seoScore}, ${geoScore}, ${JSON.stringify(metrics)}::jsonb, ${insights}, 'ready')
+      values (${brandId}::uuid, ${session.userId}::uuid, ${finalUrl.toString()}, ${JSON.stringify(keywords)}::jsonb, ${seoScore}, ${geoScore}, ${JSON.stringify(metrics)}::jsonb, ${insights}, 'ready')
       returning id, seo_score, geo_score, created_at
     `;
     return NextResponse.json({ ok: true, audit: rows[0], message: `Auditoria Beta concluída · SEO ${seoScore}/100 · GEO ${geoScore}/100.` });
