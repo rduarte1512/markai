@@ -8,13 +8,14 @@ export const metadata = { title: "Growth OS" };
 export default async function GrowthPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const context = await requireAppContext();
   const query = await searchParams;
-  const data = await getGrowthDashboardData(context.workspace_id);
+  const access = getGrowthAccess(context.plan_key);
+  const data = await getGrowthDashboardData(context.workspace_id, access.performance.windowDays || 7, access.funnelAnalytics.limit);
 
   return (
     <GrowthOS
       data={data as never}
       plan={context.plan_key}
-      access={getGrowthAccess(context.plan_key)}
+      access={access}
       initialTab={query.tab || "performance"}
     />
   );
