@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSql } from "@/lib/db";
+import { getGrowthAccess } from "@/lib/feature-access";
+import type { PlanKey } from "@/lib/types";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const ENTITY_TYPES = ["ad", "content", "funnel", "campaign", "report"] as const;
@@ -7,13 +9,17 @@ const ENTITY_TYPES = ["ad", "content", "funnel", "campaign", "report"] as const;
 async function portalBrand(token: string) {
   const sql = getSql();
   const rows = (await sql`
-    select cpl.brand_id, b.workspace_id
-    from client_portal_links cpl join brands b on b.id = cpl.brand_id
+    select cpl.brand_id, b.workspace_id, w.plan_key
+    from client_portal_links cpl
+    join brands b on b.id = cpl.brand_id
+    join workspaces w on w.id = b.workspace_id
     where cpl.token = ${token} and cpl.active = true
       and (cpl.expires_at is null or cpl.expires_at > now())
     limit 1
-  `) as unknown as Array<{ brand_id: string; workspace_id: string }>;
-  return rows[0] || null;
+  `) as unknown as Array<{ brand_id: string; workspace_id: string; plan_key: PlanKey }>;
+  const row = rows[0];
+  if (!row || !getGrowthAccess(row.plan_key).clientPortal.enabled) return null;
+  return row;
 }
 
 async function entityBelongsToBrand(entityType: string, entityId: string, brandId: string) {
@@ -31,7 +37,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     const { token } = await params;
     if (!token || token.length < 24) return NextResponse.json({ error: "Portal inválido." }, { status: 404 });
     const access = await portalBrand(token);
-    if (!access) return NextResponse.json({ error: "Este portal expirou ou foi desativado." }, { status: 404 });
+    if (!access) return NextResponse.json({ error: "Este portal expirou, foi desativado ou já não está incluído no plano." }, { status: 404 });
 
     const body = (await request.json()) as Record<string, unknown>;
     const action = String(body.action || "approval");
@@ -54,7 +60,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     }
 
     const status = String(body.status || "");
-    if (!['approved','changes_requested'].includes(status)) return NextResponse.json({ error: "Decisão inválida." }, { status: 400 });
+    if (!["approved", "changes_requested"].includes(status)) return NextResponse.json({ error: "Decisão inválida." }, { status: 400 });
     const rows = (await sql`
       insert into client_approvals(brand_id, entity_type, entity_id, status, client_name, client_note, decided_at)
       values (${access.brand_id}::uuid, ${entityType}, ${entityId}::uuid, ${status}, ${clientName}, ${note || null}, now())
