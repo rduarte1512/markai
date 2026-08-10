@@ -117,17 +117,20 @@ create index if not exists idx_automation_rules_workspace on automation_rules(wo
 create index if not exists idx_search_audits_brand_date on search_audits(brand_id, created_at desc);
 
 -- Keep the catalogue aligned with the product UI. Limits are also enforced in application code.
-update plan_catalog set features = features || '{
-  "growth_os": true,
-  "campaign_os": "limited",
-  "performance_intelligence": "limited",
-  "social_publisher": "limited",
-  "client_portal": false,
-  "reports": "limited",
-  "funnel_analytics": "limited",
-  "automations": false,
-  "search_intelligence_beta": "limited"
-}'::jsonb where key = 'free';
+update plan_catalog set
+  monthly_credits = 60,
+  features = features || '{
+    "growth_os": true,
+    "campaign_os": "limited",
+    "performance_intelligence": "limited",
+    "social_publisher": "limited",
+    "client_portal": false,
+    "reports": "limited",
+    "funnel_analytics": "limited",
+    "automations": false,
+    "search_intelligence_beta": "limited"
+  }'::jsonb
+where key = 'free';
 
 update plan_catalog set features = features || '{
   "growth_os": true,
