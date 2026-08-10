@@ -4,7 +4,7 @@ import { cleanText, enforceFeature, GrowthError, parsePositive, requireGrowthCon
 export async function POST(request: Request) {
   try {
     const { session, sql, plan } = await requireGrowthContext();
-    enforceFeature(plan, "funnelAnalytics");
+    const rule = enforceFeature(plan, "funnelAnalytics");
     const body = (await request.json()) as Record<string, unknown>;
     const funnelId = cleanText(body.funnelId, 80);
     const action = cleanText(body.action, 30) || "experiment";
@@ -15,6 +15,37 @@ export async function POST(request: Request) {
       where f.id = ${funnelId}::uuid and b.workspace_id = ${session.workspaceId}::uuid and f.status <> 'archived' limit 1
     `) as unknown as Array<{ id: string; settings?: Record<string, unknown> }>;
     if (!funnelRows[0]) throw new GrowthError("Funil inválido.", 403);
+
+    if (action === "experiment" && rule.limit < 999999) {
+      const currentRows = (await sql`
+        select exists(
+          select 1 from funnel_events where funnel_id = ${funnelId}::uuid
+          union all
+          select 1 from funnels where id = ${funnelId}::uuid and settings @> '{"ab_test":{"active":true}}'::jsonb
+        ) as used
+      `) as unknown as Array<{ used: boolean }>;
+      if (!currentRows[0]?.used) {
+        const countRows = (await sql`
+          select count(distinct analytics_funnel_id)::int as count
+          from (
+            select fe.funnel_id as analytics_funnel_id
+            from funnel_events fe
+            join funnels f on f.id = fe.funnel_id
+            join brands b on b.id = f.brand_id
+            where b.workspace_id = ${session.workspaceId}::uuid
+            union
+            select f.id as analytics_funnel_id
+            from funnels f
+            join brands b on b.id = f.brand_id
+            where b.workspace_id = ${session.workspaceId}::uuid
+              and f.settings @> '{"ab_test":{"active":true}}'::jsonb
+          ) usage
+        `) as unknown as Array<{ count: number }>;
+        if (Number(countRows[0]?.count || 0) >= rule.limit) {
+          throw new GrowthError(`O plano atual permite Funnel Analytics em ${rule.limit} funil(s). Faz upgrade para ativar mais.`, 403);
+        }
+      }
+    }
 
     if (action === "experiment") {
       const experimentName = cleanText(body.experimentName, 120);
