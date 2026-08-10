@@ -9,8 +9,10 @@ async function optionalQuery<T>(label: string, query: () => Promise<unknown>, fa
   }
 }
 
-export async function getGrowthDashboardData(workspaceId: string) {
+export async function getGrowthDashboardData(workspaceId: string, performanceWindowDays = 730, funnelLimit = 999999) {
   const sql = getSql();
+  const performanceSince = new Date(Date.now() - Math.max(1, performanceWindowDays) * 24 * 60 * 60 * 1000).toISOString();
+  const safeFunnelLimit = Math.max(1, Math.min(999999, Math.round(funnelLimit)));
 
   const [brands, campaigns, snapshots, publications, portalLinks, reports, funnels, funnelEvents, automations, audits, content, integrations, approvals] = await Promise.all([
     sql`
@@ -37,6 +39,7 @@ export async function getGrowthDashboardData(workspaceId: string) {
       join campaigns c on c.id = cs.campaign_id
       join brands b on b.id = c.brand_id
       where b.workspace_id = ${workspaceId}::uuid
+        and cs.created_at >= ${performanceSince}::timestamptz
       order by cs.created_at desc
       limit 500
     `, []),
@@ -85,6 +88,14 @@ export async function getGrowthDashboardData(workspaceId: string) {
       join brands b on b.id = f.brand_id
       left join funnel_steps fs on fs.id = fe.step_id
       where b.workspace_id = ${workspaceId}::uuid
+        and f.id in (
+          select f2.id
+          from funnels f2
+          join brands b2 on b2.id = f2.brand_id
+          where b2.workspace_id = ${workspaceId}::uuid and f2.status <> 'archived'
+          order by f2.updated_at desc
+          limit ${safeFunnelLimit}
+        )
       group by fe.funnel_id, fe.step_id, fs.title, fs.position, fe.event_type, fe.variant_key
       order by fe.funnel_id, fs.position nulls last
     `, []),
