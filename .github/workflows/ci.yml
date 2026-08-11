@@ -19,3 +19,5 @@ jobs:
         env:
           DATABASE_URL: postgresql://user:password@localhost:5432/markai
           JWT_SECRET: ci-only-secret-ci-only-secret-ci
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k
+          CLERK_SECRET_KEY: sk_test_ci-only-secret-ci-only-secret
