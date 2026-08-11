@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSignIn } from "@clerk/nextjs";
-import type { OAuthStrategy } from "@clerk/nextjs/types";
 import {
   ArrowRight,
   Check,
@@ -26,17 +25,6 @@ function GoogleIcon() {
       <path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.63-2.39l-3.24-2.51c-.9.6-2.05.96-3.39.96-2.6 0-4.8-1.76-5.59-4.13H3.06v2.6A10 10 0 0 0 12 22Z" />
       <path fill="#FBBC05" d="M6.41 13.93A6.01 6.01 0 0 1 6.1 12c0-.67.11-1.32.31-1.93v-2.6H3.06A10 10 0 0 0 2 12c0 1.61.38 3.14 1.06 4.53l3.35-2.6Z" />
       <path fill="#EA4335" d="M12 5.94c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.65 9.65 0 0 0 12 2a10 10 0 0 0-8.94 5.47l3.35 2.6C7.2 7.7 9.4 5.94 12 5.94Z" />
-    </svg>
-  );
-}
-
-function MicrosoftIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path fill="#F25022" d="M2 2h9.4v9.4H2z" />
-      <path fill="#7FBA00" d="M12.6 2H22v9.4h-9.4z" />
-      <path fill="#00A4EF" d="M2 12.6h9.4V22H2z" />
-      <path fill="#FFB900" d="M12.6 12.6H22V22h-9.4z" />
     </svg>
   );
 }
@@ -155,17 +143,17 @@ export function LoginV2Form() {
     }
   }
 
-  async function signInWith(strategy: OAuthStrategy) {
+  async function signInWithGoogle() {
     setFormError("");
     try {
       const result = await signIn.sso({
-        strategy,
+        strategy: "oauth_google",
         redirectCallbackUrl: "/sso-callback",
         redirectUrl: "/auth/complete",
       });
-      if (result.error) throw new Error(clerkMessage(result.error, "Não foi possível iniciar o login externo."));
+      if (result.error) throw new Error(clerkMessage(result.error, "Não foi possível iniciar o login com Google."));
     } catch (cause) {
-      setFormError(cause instanceof Error ? cause.message : "Não foi possível iniciar o login externo.");
+      setFormError(cause instanceof Error ? cause.message : "Não foi possível iniciar o login com Google.");
     }
   }
 
@@ -201,13 +189,15 @@ export function LoginV2Form() {
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
       <div className={oauthStyles.oauthBlock}>
         <div className={oauthStyles.providers}>
-          <button className={oauthStyles.providerButton} type="button" disabled={loading} onClick={() => signInWith("oauth_google")}>
+          <button
+            className={oauthStyles.providerButton}
+            style={{ gridColumn: "1 / -1" }}
+            type="button"
+            disabled={loading}
+            onClick={signInWithGoogle}
+          >
             <span className={oauthStyles.providerIcon}><GoogleIcon /></span>
             Continuar com Google
-          </button>
-          <button className={oauthStyles.providerButton} type="button" disabled={loading} onClick={() => signInWith("oauth_microsoft")}>
-            <span className={oauthStyles.providerIcon}><MicrosoftIcon /></span>
-            Continuar com Microsoft
           </button>
         </div>
         <div className={oauthStyles.divider}><span>ou entra com email</span></div>
