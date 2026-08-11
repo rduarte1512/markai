@@ -15,6 +15,7 @@ import { getSession } from "@/lib/auth";
 import styles from "./register.module.css";
 
 export const metadata = { title: "Criar conta" };
+export const dynamic = "force-dynamic";
 
 const highlights = [
   {

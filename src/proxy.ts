@@ -1,15 +1,12 @@
 import type { NextFetchEvent, NextRequest } from "next/server";
-import { getClerkPublishableKey, getClerkSecretKey } from "@/lib/clerk-env";
+import { clerkMiddleware } from "@clerk/nextjs/server";
+import { normalizeClerkServerEnv } from "@/lib/clerk-env";
 
 export default async function proxy(request: NextRequest, event: NextFetchEvent) {
-  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = getClerkPublishableKey();
-  }
-  if (!process.env.CLERK_SECRET_KEY) {
-    process.env.CLERK_SECRET_KEY = getClerkSecretKey();
-  }
-
-  const { clerkMiddleware } = await import("@clerk/nextjs/server");
+  // The CI build intentionally has no Clerk secrets. Resolve the production
+  // keys only when a real request reaches Proxy, before Clerk creates the
+  // signed request-state consumed by server-side auth().
+  normalizeClerkServerEnv();
   const handler = clerkMiddleware();
   return handler(request, event);
 }

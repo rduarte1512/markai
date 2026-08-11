@@ -36,8 +36,11 @@ export function normalizeClerkServerEnv() {
     process.env.CLERK_SECRET_KEY = secretKey;
   }
   if (!process.env.CLERK_ENCRYPTION_KEY) {
-    const encryptionKey = process.env.JWT_SECRET || secretKey;
-    process.env.CLERK_ENCRYPTION_KEY = encryptionKey;
+    // Clerk signs the request state in Proxy/Middleware and verifies it later in
+    // server helpers such as auth(). Both runtimes must use the same key.
+    // Clerk itself defaults this value to CLERK_SECRET_KEY, so mirror that
+    // behavior instead of using the unrelated MarkAI JWT secret.
+    process.env.CLERK_ENCRYPTION_KEY = secretKey;
   }
 
   return { publishableKey, secretKey };
