@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSignIn, useSignUp } from "@clerk/nextjs";
-import type { OAuthStrategy } from "@clerk/nextjs/types";
 import {
   ArrowRight,
   Building2,
@@ -28,17 +27,6 @@ function GoogleIcon() {
   );
 }
 
-function MicrosoftIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path fill="#F25022" d="M2 2h9.4v9.4H2z" />
-      <path fill="#7FBA00" d="M12.6 2H22v9.4h-9.4z" />
-      <path fill="#00A4EF" d="M2 12.6h9.4V22H2z" />
-      <path fill="#FFB900" d="M12.6 12.6H22V22h-9.4z" />
-    </svg>
-  );
-}
-
 function errorMessage(error: unknown, fallback: string) {
   if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
     return error.message;
@@ -57,8 +45,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const [workspaceName, setWorkspaceName] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [verifying, setVerifying] = useState(false);
-  const [socialLoading, setSocialLoading] = useState<OAuthStrategy | null>(null);
-  const loading = signInStatus === "fetching" || signUpStatus === "fetching" || Boolean(socialLoading);
+  const [socialLoading, setSocialLoading] = useState(false);
+  const loading = signInStatus === "fetching" || signUpStatus === "fetching" || socialLoading;
 
   const passwordStrength = useMemo(() => {
     let score = 0;
@@ -83,9 +71,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     });
   }
 
-  async function signUpWith(strategy: OAuthStrategy) {
+  async function signUpWithGoogle() {
     setError("");
-    setSocialLoading(strategy);
+    setSocialLoading(true);
 
     const metadata: Record<string, string> = {};
     if (name.trim()) metadata.markaiName = name.trim();
@@ -93,15 +81,15 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
     try {
       const result = await signUp.sso({
-        strategy,
+        strategy: "oauth_google",
         redirectCallbackUrl: "/sso-callback",
         redirectUrl: "/auth/complete",
         unsafeMetadata: metadata,
       });
-      if (result.error) throw new Error(errorMessage(result.error, "Não foi possível continuar com este método."));
+      if (result.error) throw new Error(errorMessage(result.error, "Não foi possível continuar com Google."));
     } catch (cause) {
-      setSocialLoading(null);
-      setError(cause instanceof Error ? cause.message : "Não foi possível iniciar o registo externo.");
+      setSocialLoading(false);
+      setError(cause instanceof Error ? cause.message : "Não foi possível iniciar o registo com Google.");
     }
   }
 
@@ -195,13 +183,15 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       {mode === "register" && (
         <div className="auth-social-block">
           <div className="auth-social-grid">
-            <button className="auth-social-button auth-social-button-google" type="button" disabled={loading} onClick={() => signUpWith("oauth_google")}>
+            <button
+              className="auth-social-button auth-social-button-google"
+              style={{ gridColumn: "1 / -1" }}
+              type="button"
+              disabled={loading}
+              onClick={signUpWithGoogle}
+            >
               <span className="auth-social-icon"><GoogleIcon /></span>
-              {socialLoading === "oauth_google" ? <><LoaderCircle size={16} className="spin" /> A abrir Google...</> : "Continuar com Google"}
-            </button>
-            <button className="auth-social-button" type="button" disabled={loading} onClick={() => signUpWith("oauth_microsoft")}>
-              <span className="auth-social-icon"><MicrosoftIcon /></span>
-              {socialLoading === "oauth_microsoft" ? <><LoaderCircle size={16} className="spin" /> A abrir...</> : "Microsoft"}
+              {socialLoading ? <><LoaderCircle size={16} className="spin" /> A abrir Google...</> : "Continuar com Google"}
             </button>
           </div>
           <div className="auth-divider"><span>ou cria a conta com email</span></div>
