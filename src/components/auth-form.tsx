@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSignIn, useSignUp } from "@clerk/nextjs";
 import {
   ArrowRight,
   Building2,
@@ -15,12 +16,23 @@ import {
   UserRound,
 } from "lucide-react";
 
+function errorMessage(error: unknown, fallback: string) {
+  if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
+    return error.message;
+  }
+  return fallback;
+}
+
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
+  const { signIn, fetchStatus: signInStatus } = useSignIn();
+  const { signUp, fetchStatus: signUpStatus } = useSignUp();
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const loading = signInStatus === "fetching" || signUpStatus === "fetching";
 
   const passwordStrength = useMemo(() => {
     let score = 0;
@@ -31,30 +43,97 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     return score;
   }, [password]);
 
+  async function finalizeSignUp() {
+    await signUp.finalize({
+      navigate: ({ session, decorateUrl }) => {
+        if (session?.currentTask) {
+          setError("A tua conta precisa de concluir uma verificação adicional.");
+          return;
+        }
+        const url = decorateUrl("/auth/complete");
+        if (url.startsWith("http")) window.location.href = url;
+        else router.push(url);
+      },
+    });
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
     setError("");
-
     const formData = new FormData(event.currentTarget);
-    const payload = Object.fromEntries(formData.entries());
+    const email = String(formData.get("email") || "").trim().toLowerCase();
 
     try {
-      const response = await fetch(`/api/auth/${mode}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const data = (await response.json()) as { error?: string; next?: string };
-      if (!response.ok) throw new Error(data.error || "Não foi possível continuar.");
+      if (mode === "register") {
+        const name = String(formData.get("name") || "").trim();
+        const workspaceName = String(formData.get("workspaceName") || "").trim();
+        const result = await signUp.password({
+          emailAddress: email,
+          password,
+          unsafeMetadata: { markaiName: name, workspaceName },
+        });
+        if (result.error) throw new Error(errorMessage(result.error, "Não foi possível criar a conta."));
+        await signUp.verifications.sendEmailCode();
+        setVerifying(true);
+        return;
+      }
 
-      router.push(data.next || (mode === "register" ? "/onboarding" : "/dashboard"));
-      router.refresh();
+      const result = await signIn.password({ emailAddress: email, password });
+      if (result.error) throw new Error(errorMessage(result.error, "Não foi possível entrar."));
+      if (signIn.status !== "complete") throw new Error("É necessária uma verificação adicional.");
+      await signIn.finalize({
+        navigate: ({ session, decorateUrl }) => {
+          if (session?.currentTask) return setError("É necessária uma verificação adicional.");
+          const url = decorateUrl("/auth/complete");
+          if (url.startsWith("http")) window.location.href = url;
+          else router.push(url);
+        },
+      });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Ocorreu um erro inesperado.");
-    } finally {
-      setLoading(false);
     }
+  }
+
+  async function handleVerify(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    try {
+      const result = await signUp.verifications.verifyEmailCode({ code: verificationCode.trim() });
+      if (result.error) throw new Error(errorMessage(result.error, "Código inválido."));
+      if (signUp.status !== "complete") throw new Error("A verificação ainda não ficou concluída.");
+      await finalizeSignUp();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível verificar o código.");
+    }
+  }
+
+  if (mode === "register" && verifying) {
+    return (
+      <form className="auth-form" onSubmit={handleVerify}>
+        <div className="field">
+          <label htmlFor="verificationCode">Código enviado para o teu email</label>
+          <div className="input-shell">
+            <ShieldCheck size={17} />
+            <input
+              id="verificationCode"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              placeholder="000000"
+              value={verificationCode}
+              onChange={(event) => setVerificationCode(event.target.value)}
+              required
+            />
+          </div>
+        </div>
+        {error && <div className="form-error">{error}</div>}
+        <button className="button button-primary auth-submit" disabled={loading} type="submit">
+          {loading ? <><LoaderCircle size={17} className="spin" /> A verificar...</> : <>Confirmar conta <ArrowRight size={17} /></>}
+        </button>
+        <button className="button" type="button" disabled={loading} onClick={() => signUp.verifications.sendEmailCode()}>
+          Reenviar código
+        </button>
+      </form>
+    );
   }
 
   return (
@@ -89,7 +168,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       <div className="field">
         <div className="field-label-row">
           <label htmlFor="password">Palavra-passe</label>
-          {mode === "login" && <span>Protegido por sessão segura</span>}
+          {mode === "login" && <span>Protegido pelo Clerk</span>}
         </div>
         <div className="input-shell">
           <LockKeyhole size={17} />
@@ -137,16 +216,17 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
       <div className="auth-security-note">
         <ShieldCheck size={16} />
-        <span>{mode === "login" ? "Os teus dados e marcas ficam protegidos." : "Sem cartão. Configuras a primeira marca logo a seguir."}</span>
+        <span>{mode === "login" ? "Autenticação protegida pelo Clerk." : "Sem cartão. Configuras a primeira marca logo a seguir."}</span>
       </div>
 
       {mode === "register" && (
         <div className="auth-mini-benefits">
-          <span><Check size={13} /> 120 créditos incluídos</span>
+          <span><Check size={13} /> 60 créditos incluídos</span>
           <span><Check size={13} /> 1 marca gratuita</span>
           <span><Check size={13} /> Sem compromisso</span>
         </div>
       )}
+      {mode === "register" && <div id="clerk-captcha" />}
     </form>
   );
 }
