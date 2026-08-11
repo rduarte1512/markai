@@ -1,11 +1,15 @@
+import type { NextFetchEvent, NextRequest } from "next/server";
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { normalizeClerkServerEnv } from "@/lib/clerk-env";
 
-// Normalize the fallback Vercel variable names before Clerk creates the
-// request-state bridge consumed by server-side auth().
-normalizeClerkServerEnv();
-
-export default clerkMiddleware();
+export default async function proxy(request: NextRequest, event: NextFetchEvent) {
+  // The CI build intentionally has no Clerk secrets. Resolve the production
+  // keys only when a real request reaches Proxy, before Clerk creates the
+  // signed request-state consumed by server-side auth().
+  normalizeClerkServerEnv();
+  const handler = clerkMiddleware();
+  return handler(request, event);
+}
 
 export const config = {
   matcher: [
