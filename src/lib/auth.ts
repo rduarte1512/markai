@@ -9,9 +9,8 @@ import { getBillingWorkspaceForUser } from "@/lib/workspaces";
 import type { AppContext, SessionPayload } from "@/lib/types";
 
 /**
- * Legacy MarkAI session cookie is retained only to preserve the currently
- * selected workspace while Clerk becomes the authentication source of truth.
- * A workspace from this cookie is never trusted until membership is checked.
+ * Clerk is the authentication source of truth. This cookie only keeps the
+ * currently selected MarkAI workspace and is always revalidated against Neon.
  */
 export const SESSION_COOKIE = "markai_session";
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 14;
@@ -49,6 +48,10 @@ type MarkAIUser = {
   email: string;
 };
 
+function metadataText(value: unknown, max: number) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
 async function getOrCreateMarkAIUser(clerkUserId: string): Promise<MarkAIUser | null> {
   const sql = getSql();
   const linked = (await sql`
@@ -67,9 +70,11 @@ async function getOrCreateMarkAIUser(clerkUserId: string): Promise<MarkAIUser | 
   const email = primaryEmail?.emailAddress?.trim().toLowerCase() || "";
   if (!email) return null;
 
-  const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ").trim()
-    || email.split("@")[0]
-    || "Utilizador MarkAI";
+  const requestedName = metadataText(clerkUser.unsafeMetadata?.markaiName, 140);
+  const requestedWorkspaceName = metadataText(clerkUser.unsafeMetadata?.workspaceName, 140);
+  const providerName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ").trim();
+  const name = requestedName || providerName || email.split("@")[0] || "Utilizador MarkAI";
+  const workspaceName = requestedWorkspaceName || `${name.slice(0, 100)} Workspace`;
 
   const existing = (await sql`
     select id, email, clerk_user_id
@@ -101,7 +106,7 @@ async function getOrCreateMarkAIUser(clerkUserId: string): Promise<MarkAIUser | 
       ${name.slice(0, 140)},
       ${email},
       ${generatedPassword},
-      ${`${name.slice(0, 100)} Workspace`}
+      ${workspaceName}
     )
   `) as unknown as Array<{ user_id: string; workspace_id: string }>;
   const createdUserId = registered[0]?.user_id;
@@ -145,7 +150,7 @@ async function getPreferredWorkspace(userId: string) {
       }
     }
   } catch {
-    // Ignore stale legacy workspace cookies. Clerk still controls authentication.
+    // A stale workspace cookie never grants access; Clerk remains the auth source.
   }
 
   return rows[0].workspace_id;
