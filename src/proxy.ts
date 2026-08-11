@@ -1,18 +1,11 @@
-import type { NextFetchEvent, NextRequest } from "next/server";
-import { getClerkPublishableKey, getClerkSecretKey } from "@/lib/clerk-env";
+import { clerkMiddleware } from "@clerk/nextjs/server";
+import { normalizeClerkServerEnv } from "@/lib/clerk-env";
 
-export default async function proxy(request: NextRequest, event: NextFetchEvent) {
-  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = getClerkPublishableKey();
-  }
-  if (!process.env.CLERK_SECRET_KEY) {
-    process.env.CLERK_SECRET_KEY = getClerkSecretKey();
-  }
+// Normalize the fallback Vercel variable names before Clerk creates the
+// request-state bridge consumed by server-side auth().
+normalizeClerkServerEnv();
 
-  const { clerkMiddleware } = await import("@clerk/nextjs/server");
-  const handler = clerkMiddleware();
-  return handler(request, event);
-}
+export default clerkMiddleware();
 
 export const config = {
   matcher: [
