@@ -22,7 +22,6 @@ type ProviderProfile = {
   name?: string;
   email?: string;
   email_verified?: boolean;
-  preferred_username?: string;
   picture?: string;
 };
 
@@ -130,7 +129,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
 
     const profile = (await profileResponse.json()) as ProviderProfile;
     const subject = String(profile.sub || "").trim();
-    const rawEmail = String(profile.email || profile.preferred_username || "").trim().toLowerCase();
+    const rawEmail = String(profile.email || "").trim().toLowerCase();
     const email = validEmail(rawEmail) ? rawEmail : "";
     const name = String(profile.name || email.split("@")[0] || "Utilizador MarkAI").trim().slice(0, 140);
     const picture = safePicture(profile.picture);
