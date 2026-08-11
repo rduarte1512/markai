@@ -1,9 +1,18 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
-import { normalizeClerkServerEnv } from "@/lib/clerk-env";
+import type { NextFetchEvent, NextRequest } from "next/server";
+import { getClerkPublishableKey, getClerkSecretKey } from "@/lib/clerk-env";
 
-const { publishableKey, secretKey } = normalizeClerkServerEnv();
+export default async function proxy(request: NextRequest, event: NextFetchEvent) {
+  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = getClerkPublishableKey();
+  }
+  if (!process.env.CLERK_SECRET_KEY) {
+    process.env.CLERK_SECRET_KEY = getClerkSecretKey();
+  }
 
-export default clerkMiddleware({ publishableKey, secretKey });
+  const { clerkMiddleware } = await import("@clerk/nextjs/server");
+  const handler = clerkMiddleware();
+  return handler(request, event);
+}
 
 export const config = {
   matcher: [
