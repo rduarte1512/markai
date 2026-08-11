@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import "./auth-onboarding.css";
 import "./premium.css";
@@ -24,6 +25,7 @@ import "./billing-payment-settings.css";
 import { ScrollMotion } from "@/components/scroll-motion";
 import { ProductActionLinkBridge } from "@/components/product-action-link-bridge";
 import { ConversationActionsBridge } from "@/components/conversation-actions-bridge";
+import { getClerkPublishableKey } from "@/lib/clerk-env";
 
 export const metadata: Metadata = {
   title: {
@@ -34,9 +36,13 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const publishableKey = getClerkPublishableKey();
+
   return (
-    <html lang="pt">
-      <body><ScrollMotion /><ProductActionLinkBridge /><ConversationActionsBridge />{children}</body>
-    </html>
+    <ClerkProvider publishableKey={publishableKey}>
+      <html lang="pt">
+        <body><ScrollMotion /><ProductActionLinkBridge /><ConversationActionsBridge />{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }

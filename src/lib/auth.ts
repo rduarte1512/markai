@@ -1,10 +1,20 @@
+import { randomBytes } from "node:crypto";
+import bcrypt from "bcryptjs";
+import { auth as clerkAuth, clerkClient } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
 import { getSql } from "@/lib/db";
+import { normalizeClerkServerEnv } from "@/lib/clerk-env";
 import { getBillingWorkspaceForUser } from "@/lib/workspaces";
 import type { AppContext, SessionPayload } from "@/lib/types";
 
+normalizeClerkServerEnv();
+
+/**
+ * Clerk is the authentication source of truth. This cookie only keeps the
+ * currently selected MarkAI workspace and is always revalidated against Neon.
+ */
 export const SESSION_COOKIE = "markai_session";
 const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 14;
 
@@ -36,26 +46,137 @@ export function sessionCookieOptions() {
   };
 }
 
-export async function getSession(): Promise<SessionPayload | null> {
-  try {
-    const token = (await cookies()).get(SESSION_COOKIE)?.value;
-    if (!token) return null;
+type MarkAIUser = {
+  id: string;
+  email: string;
+};
 
-    const { payload } = await jwtVerify(token, getSecret());
-    const userId = payload.userId;
-    const workspaceId = payload.workspaceId;
-    const expiresAt = payload.expiresAt;
+function metadataText(value: unknown, max: number) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
 
-    if (
-      typeof userId !== "string" ||
-      typeof workspaceId !== "string" ||
-      typeof expiresAt !== "number"
-    ) {
-      return null;
+async function getOrCreateMarkAIUser(clerkUserId: string): Promise<MarkAIUser | null> {
+  const sql = getSql();
+  const linked = (await sql`
+    select id, email
+    from users
+    where clerk_user_id = ${clerkUserId}
+    limit 1
+  `) as unknown as MarkAIUser[];
+  if (linked[0]) return linked[0];
+
+  const client = await clerkClient();
+  const clerkUser = await client.users.getUser(clerkUserId);
+  const primaryEmail = clerkUser.emailAddresses.find(
+    (item) => item.id === clerkUser.primaryEmailAddressId,
+  ) ?? clerkUser.emailAddresses[0];
+  const email = primaryEmail?.emailAddress?.trim().toLowerCase() || "";
+  if (!email) return null;
+
+  const requestedName = metadataText(clerkUser.unsafeMetadata?.markaiName, 140);
+  const requestedWorkspaceName = metadataText(clerkUser.unsafeMetadata?.workspaceName, 140);
+  const providerName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ").trim();
+  const name = requestedName || providerName || email.split("@")[0] || "Utilizador MarkAI";
+  const workspaceName = requestedWorkspaceName || `${name.slice(0, 100)} Workspace`;
+
+  const existing = (await sql`
+    select id, email, clerk_user_id
+    from users
+    where lower(email) = ${email}
+    limit 1
+  `) as unknown as Array<MarkAIUser & { clerk_user_id: string | null }>;
+
+  if (existing[0]) {
+    if (existing[0].clerk_user_id && existing[0].clerk_user_id !== clerkUserId) {
+      throw new Error("CLERK_EMAIL_ALREADY_LINKED");
     }
 
-    return { userId, workspaceId, expiresAt };
+    const attached = (await sql`
+      update users
+      set clerk_user_id = ${clerkUserId},
+          avatar_url = coalesce(avatar_url, ${clerkUser.imageUrl || null}),
+          updated_at = now()
+      where id = ${existing[0].id}::uuid
+        and (clerk_user_id is null or clerk_user_id = ${clerkUserId})
+      returning id, email
+    `) as unknown as MarkAIUser[];
+    return attached[0] ?? null;
+  }
+
+  const generatedPassword = await bcrypt.hash(randomBytes(32).toString("hex"), 12);
+  const registered = (await sql`
+    select * from register_markai_user(
+      ${name.slice(0, 140)},
+      ${email},
+      ${generatedPassword},
+      ${workspaceName}
+    )
+  `) as unknown as Array<{ user_id: string; workspace_id: string }>;
+  const createdUserId = registered[0]?.user_id;
+  if (!createdUserId) return null;
+
+  const attached = (await sql`
+    update users
+    set clerk_user_id = ${clerkUserId},
+        avatar_url = coalesce(avatar_url, ${clerkUser.imageUrl || null}),
+        updated_at = now()
+    where id = ${createdUserId}::uuid
+    returning id, email
+  `) as unknown as MarkAIUser[];
+
+  return attached[0] ?? null;
+}
+
+async function getPreferredWorkspace(userId: string) {
+  const sql = getSql();
+  const rows = (await sql`
+    select w.id as workspace_id
+    from workspace_members wm
+    join workspaces w on w.id = wm.workspace_id
+    where wm.user_id = ${userId}::uuid
+    order by case wm.role when 'owner' then 0 else 1 end, wm.joined_at asc
+  `) as unknown as Array<{ workspace_id: string }>;
+
+  if (!rows.length) return null;
+
+  try {
+    const token = (await cookies()).get(SESSION_COOKIE)?.value;
+    if (token) {
+      const { payload } = await jwtVerify(token, getSecret());
+      const cookieUserId = typeof payload.userId === "string" ? payload.userId : "";
+      const cookieWorkspaceId = typeof payload.workspaceId === "string" ? payload.workspaceId : "";
+      if (
+        cookieUserId === userId
+        && rows.some((row) => row.workspace_id === cookieWorkspaceId)
+      ) {
+        return cookieWorkspaceId;
+      }
+    }
   } catch {
+    // A stale workspace cookie never grants access; Clerk remains the auth source.
+  }
+
+  return rows[0].workspace_id;
+}
+
+export async function getSession(): Promise<SessionPayload | null> {
+  try {
+    const authState = await clerkAuth();
+    if (!authState.isAuthenticated || !authState.userId) return null;
+
+    const user = await getOrCreateMarkAIUser(authState.userId);
+    if (!user) return null;
+
+    const workspaceId = await getPreferredWorkspace(user.id);
+    if (!workspaceId) return null;
+
+    return {
+      userId: user.id,
+      workspaceId,
+      expiresAt: Math.floor(Date.now() / 1000) + 60 * 60,
+    };
+  } catch (cause) {
+    console.error("Clerk session bridge error:", cause);
     return null;
   }
 }
