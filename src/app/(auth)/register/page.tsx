@@ -101,7 +101,7 @@ export default async function RegisterPage() {
           <header className={styles.formHeader}>
             <span className={styles.formKicker}>Começa gratuitamente</span>
             <h2>Cria o teu espaço no MarkAI</h2>
-            <p>Continua com Google ou Microsoft, ou usa o teu email profissional.</p>
+            <p>Continua com Google ou usa o teu email profissional.</p>
           </header>
 
           <div className={styles.formCard}>
