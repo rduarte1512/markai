@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { getSql } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 export default async function AuthCompletePage() {
   const session = await getSession();
   if (!session) redirect("/login?clerk_error=session_sync_failed");
