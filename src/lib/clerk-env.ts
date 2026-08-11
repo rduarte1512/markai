@@ -35,6 +35,10 @@ export function normalizeClerkServerEnv() {
   if (!process.env.CLERK_SECRET_KEY) {
     process.env.CLERK_SECRET_KEY = secretKey;
   }
+  if (!process.env.CLERK_ENCRYPTION_KEY) {
+    const encryptionKey = process.env.JWT_SECRET || secretKey;
+    process.env.CLERK_ENCRYPTION_KEY = encryptionKey;
+  }
 
   return { publishableKey, secretKey };
 }

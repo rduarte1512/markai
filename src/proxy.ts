@@ -1,9 +1,9 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { normalizeClerkServerEnv } from "@/lib/clerk-env";
 
-const { publishableKey } = normalizeClerkServerEnv();
+const { publishableKey, secretKey } = normalizeClerkServerEnv();
 
-export default clerkMiddleware({ publishableKey });
+export default clerkMiddleware({ publishableKey, secretKey });
 
 export const config = {
   matcher: [
