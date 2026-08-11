@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import "./auth-onboarding.css";
 import "./premium.css";
@@ -36,10 +35,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ClerkProvider>
-      <html lang="pt">
-        <body><ScrollMotion /><ProductActionLinkBridge /><ConversationActionsBridge />{children}</body>
-      </html>
-    </ClerkProvider>
+    <html lang="pt">
+      <body><ScrollMotion /><ProductActionLinkBridge /><ConversationActionsBridge />{children}</body>
+    </html>
   );
 }

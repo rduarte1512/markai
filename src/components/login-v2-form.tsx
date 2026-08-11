@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSignIn } from "@clerk/nextjs";
-import type { OAuthStrategy } from "@clerk/nextjs/types";
 import {
   ArrowRight,
   Check,
@@ -41,79 +39,35 @@ function MicrosoftIcon() {
   );
 }
 
-function clerkMessage(error: unknown, fallback: string) {
-  if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
-    return error.message;
-  }
-  return fallback;
-}
+const oauthErrors: Record<string, string> = {
+  not_configured: "Este método de login ainda não está configurado no servidor.",
+  cancelled: "O login externo foi cancelado.",
+  invalid_state: "A sessão de login expirou. Tenta novamente.",
+  token_exchange_failed: "Não foi possível validar o login com o fornecedor.",
+  profile_failed: "Não foi possível obter o perfil da tua conta.",
+  email_unavailable: "Esta conta não disponibilizou um email válido ao MarkAI.",
+  email_unverified: "O email desta conta Google ainda não está verificado.",
+  oauth_failed: "Não foi possível concluir o login externo. Tenta novamente.",
+};
 
 export function LoginV2Form() {
   const router = useRouter();
-  const { signIn, fetchStatus } = useSignIn();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [needsVerification, setNeedsVerification] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [formError, setFormError] = useState("");
-  const loading = fetchStatus === "fetching";
+  const [loading, setLoading] = useState(false);
 
-  async function finishSignIn() {
-    await signIn.finalize({
-      navigate: ({ session, decorateUrl }) => {
-        if (session?.currentTask) {
-          setFormError("A tua conta precisa de concluir uma verificação adicional no Clerk.");
-          return;
-        }
-        const target = decorateUrl("/auth/complete");
-        if (target.startsWith("http")) window.location.href = target;
-        else router.push(target);
-      },
-    });
-  }
-
-  async function handleAdditionalVerification() {
-    const emailCodeFactor = signIn.supportedSecondFactors?.find((factor) => factor.strategy === "email_code");
-    if (!emailCodeFactor) {
-      setFormError("Esta conta exige um método de verificação adicional que ainda não está disponível nesta tela.");
-      return;
-    }
-    await signIn.mfa.sendEmailCode();
-    setNeedsVerification(true);
-  }
-
-  async function attemptPasswordLogin(normalizedEmail: string, allowMigration: boolean) {
-    const result = await signIn.password({ emailAddress: normalizedEmail, password });
-    if (result.error) {
-      if (allowMigration) {
-        const migration = await fetch("/api/auth/clerk/migrate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: normalizedEmail, password }),
-        });
-        if (migration.ok) {
-          await signIn.reset();
-          return attemptPasswordLogin(normalizedEmail, false);
-        }
-      }
-      throw new Error(clerkMessage(result.error, "Email ou palavra-passe incorretos."));
-    }
-
-    if (signIn.status === "complete") {
-      await finishSignIn();
-      return;
-    }
-
-    if (signIn.status === "needs_second_factor" || signIn.status === "needs_client_trust") {
-      await handleAdditionalVerification();
-      return;
-    }
-
-    throw new Error("O Clerk pediu um passo adicional para concluir o login.");
-  }
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("oauth_error");
+    const provider = params.get("provider");
+    if (!code) return;
+    const label = provider === "microsoft" ? "Microsoft" : provider === "google" ? "Google" : "fornecedor";
+    setFormError(`${label}: ${oauthErrors[code] || oauthErrors.oauth_failed}`);
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -121,7 +75,7 @@ export function LoginV2Form() {
     setPasswordError("");
     setFormError("");
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = email.trim();
     const validEmail = /^\S+@\S+\.\S{2,}$/.test(normalizedEmail);
     let valid = true;
 
@@ -135,80 +89,37 @@ export function LoginV2Form() {
     }
     if (!valid) return;
 
+    setLoading(true);
     try {
-      await attemptPasswordLogin(normalizedEmail, true);
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalizedEmail, password }),
+      });
+      const data = (await response.json()) as { error?: string; next?: string };
+      if (!response.ok) throw new Error(data.error || "Não foi possível iniciar sessão.");
+
+      router.push(data.next || "/dashboard");
+      router.refresh();
     } catch (cause) {
       setFormError(cause instanceof Error ? cause.message : "Ocorreu um erro inesperado.");
+    } finally {
+      setLoading(false);
     }
-  }
-
-  async function handleVerify(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setFormError("");
-    try {
-      const result = await signIn.mfa.verifyEmailCode({ code: verificationCode.trim() });
-      if (result.error) throw new Error(clerkMessage(result.error, "Código inválido."));
-      if (signIn.status === "complete") await finishSignIn();
-      else setFormError("A verificação ainda não ficou concluída.");
-    } catch (cause) {
-      setFormError(cause instanceof Error ? cause.message : "Não foi possível verificar o código.");
-    }
-  }
-
-  async function signInWith(strategy: OAuthStrategy) {
-    setFormError("");
-    try {
-      const result = await signIn.sso({
-        strategy,
-        redirectCallbackUrl: "/sso-callback",
-        redirectUrl: "/auth/complete",
-      });
-      if (result.error) throw new Error(clerkMessage(result.error, "Não foi possível iniciar o login externo."));
-    } catch (cause) {
-      setFormError(cause instanceof Error ? cause.message : "Não foi possível iniciar o login externo.");
-    }
-  }
-
-  if (needsVerification) {
-    return (
-      <form className={styles.form} onSubmit={handleVerify} noValidate>
-        <div className={styles.field}>
-          <label htmlFor="login-code">Código de verificação</label>
-          <div className={styles.inputShell}>
-            <ShieldCheck size={17} aria-hidden="true" />
-            <input
-              id="login-code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              placeholder="000000"
-              value={verificationCode}
-              onChange={(event) => setVerificationCode(event.target.value)}
-            />
-          </div>
-        </div>
-        {formError && <div className={styles.formError} role="alert"><CircleAlert size={15} /> {formError}</div>}
-        <button className={styles.submit} type="submit" disabled={loading} aria-busy={loading}>
-          {loading ? <><LoaderCircle className={styles.spin} size={17} /> A verificar…</> : <>Confirmar código <ArrowRight size={17} /></>}
-        </button>
-        <button type="button" className={oauthStyles.providerButton} onClick={() => { signIn.reset(); setNeedsVerification(false); }}>
-          Voltar ao login
-        </button>
-      </form>
-    );
   }
 
   return (
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
       <div className={oauthStyles.oauthBlock}>
         <div className={oauthStyles.providers}>
-          <button className={oauthStyles.providerButton} type="button" disabled={loading} onClick={() => signInWith("oauth_google")}>
+          <a className={oauthStyles.providerButton} href="/api/auth/oauth/google">
             <span className={oauthStyles.providerIcon}><GoogleIcon /></span>
             Continuar com Google
-          </button>
-          <button className={oauthStyles.providerButton} type="button" disabled={loading} onClick={() => signInWith("oauth_microsoft")}>
+          </a>
+          <a className={oauthStyles.providerButton} href="/api/auth/oauth/microsoft">
             <span className={oauthStyles.providerIcon}><MicrosoftIcon /></span>
             Continuar com Microsoft
-          </button>
+          </a>
         </div>
         <div className={oauthStyles.divider}><span>ou entra com email</span></div>
       </div>
@@ -286,7 +197,7 @@ export function LoginV2Form() {
         {loading ? <><LoaderCircle className={styles.spin} size={17} /> A entrar…</> : <>Entrar no MarkAI <ArrowRight size={17} /></>}
       </button>
 
-      <p className={styles.secureNote}><ShieldCheck size={14} /> Autenticação protegida pelo Clerk.</p>
+      <p className={styles.secureNote}><ShieldCheck size={14} /> Os teus dados e marcas ficam protegidos.</p>
 
       <p className={styles.signupRow}>Ainda não tens conta? <Link href="/register">Criar conta gratuitamente</Link></p>
 
