@@ -18,6 +18,7 @@ import styles from "@/components/login-v2.module.css";
 import { getSession } from "@/lib/auth";
 
 export const metadata = { title: "Entrar" };
+export const dynamic = "force-dynamic";
 
 const navItems = [
   { label: "Visão geral", icon: LayoutDashboard },
