@@ -1,6 +1,5 @@
 import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { auth as clerkAuth, clerkClient } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
@@ -9,7 +8,14 @@ import { normalizeClerkServerEnv } from "@/lib/clerk-env";
 import { getBillingWorkspaceForUser } from "@/lib/workspaces";
 import type { AppContext, SessionPayload } from "@/lib/types";
 
-normalizeClerkServerEnv();
+async function getClerkServerModule() {
+  // In Vercel, MarkAI may receive Clerk keys under project-scoped fallback
+  // names. Normalize those names before the Clerk server module is evaluated,
+  // otherwise auth() can use a different request-state encryption key than
+  // clerkMiddleware() and reject an otherwise valid browser session.
+  normalizeClerkServerEnv();
+  return import("@clerk/nextjs/server");
+}
 
 /**
  * Clerk is the authentication source of truth. This cookie only keeps the
@@ -65,6 +71,7 @@ async function getOrCreateMarkAIUser(clerkUserId: string): Promise<MarkAIUser | 
   `) as unknown as MarkAIUser[];
   if (linked[0]) return linked[0];
 
+  const { clerkClient } = await getClerkServerModule();
   const client = await clerkClient();
   const clerkUser = await client.users.getUser(clerkUserId);
   const primaryEmail = clerkUser.emailAddresses.find(
@@ -161,6 +168,7 @@ async function getPreferredWorkspace(userId: string) {
 
 export async function getSession(): Promise<SessionPayload | null> {
   try {
+    const { auth: clerkAuth } = await getClerkServerModule();
     const authState = await clerkAuth();
     if (!authState.isAuthenticated || !authState.userId) return null;
 
