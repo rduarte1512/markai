@@ -15,6 +15,7 @@ import {
   Mail,
   ShieldCheck,
 } from "lucide-react";
+import { clerkErrorMessage } from "@/lib/clerk-ui-errors";
 import styles from "./login-v2.module.css";
 import oauthStyles from "./login-oauth.module.css";
 
@@ -30,10 +31,7 @@ function GoogleIcon() {
 }
 
 function clerkMessage(error: unknown, fallback: string) {
-  if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
-    return error.message;
-  }
-  return fallback;
+  return clerkErrorMessage(error, fallback);
 }
 
 export function LoginV2Form() {

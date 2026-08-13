@@ -38,12 +38,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, alreadyLinked: true });
     }
 
-    // The Vercel Clerk integration may expose project-prefixed variables.
-    // Normalize them before the server SDK is evaluated so clerkClient() gets
-    // the real Secret Key instead of failing with "Missing Clerk Secret Key".
-    normalizeClerkServerEnv();
-    const { clerkClient } = await import("@clerk/nextjs/server");
-    const client = await clerkClient();
+    const { publishableKey, secretKey } = normalizeClerkServerEnv();
+    const { createClerkClient } = await import("@clerk/nextjs/server");
+    const client = createClerkClient({ publishableKey, secretKey });
 
     const existingClerkUsers = await client.users.getUserList({
       emailAddress: [user.email],
