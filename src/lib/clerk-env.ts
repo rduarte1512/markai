@@ -36,12 +36,16 @@ export function normalizeClerkServerEnv() {
     process.env.CLERK_SECRET_KEY = secretKey;
   }
   if (!process.env.CLERK_ENCRYPTION_KEY) {
-    // Clerk signs the request state in Proxy/Middleware and verifies it later in
-    // server helpers such as auth(). Both runtimes must use the same key.
-    // Clerk itself defaults this value to CLERK_SECRET_KEY, so mirror that
-    // behavior instead of using the unrelated MarkAI JWT secret.
-    process.env.CLERK_ENCRYPTION_KEY = secretKey;
+    // Clerk encrypts the dynamic keys propagated by clerkMiddleware() and the
+    // server-side auth() helper must decrypt them with the exact same value.
+    // JWT_SECRET is already a stable private secret shared by Vercel runtimes,
+    // so prefer it over deriving this value independently in each runtime.
+    process.env.CLERK_ENCRYPTION_KEY = process.env.JWT_SECRET || secretKey;
   }
 
-  return { publishableKey, secretKey };
+  return {
+    publishableKey,
+    secretKey,
+    encryptionKey: process.env.CLERK_ENCRYPTION_KEY,
+  };
 }

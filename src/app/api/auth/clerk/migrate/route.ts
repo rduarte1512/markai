@@ -1,10 +1,7 @@
 import bcrypt from "bcryptjs";
-import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { normalizeClerkServerEnv } from "@/lib/clerk-env";
 import { getSql } from "@/lib/db";
-
-normalizeClerkServerEnv();
 
 export const runtime = "nodejs";
 
@@ -38,29 +35,67 @@ export async function POST(request: Request) {
     }
 
     if (user.clerk_user_id) {
-      return NextResponse.json({ error: "A conta já usa Clerk." }, { status: 409 });
+      return NextResponse.json({ ok: true, alreadyLinked: true });
     }
 
+    // The Vercel Clerk integration may expose project-prefixed variables.
+    // Normalize them before the server SDK is evaluated so clerkClient() gets
+    // the real Secret Key instead of failing with "Missing Clerk Secret Key".
+    normalizeClerkServerEnv();
+    const { clerkClient } = await import("@clerk/nextjs/server");
     const client = await clerkClient();
-    const nameParts = user.name.trim().split(/\s+/);
-    const created = await client.users.createUser({
+
+    const existingClerkUsers = await client.users.getUserList({
       emailAddress: [user.email],
-      password,
-      firstName: nameParts[0] || undefined,
-      lastName: nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined,
-      externalId: user.id,
-      skipLegalChecks: true,
+      limit: 1,
     });
+
+    const existingClerkUser = existingClerkUsers.data[0];
+    let clerkUserId: string;
+    let createdNewUser = false;
+
+    if (existingClerkUser) {
+      if (existingClerkUser.externalId && existingClerkUser.externalId !== user.id) {
+        return NextResponse.json(
+          { error: "Este email já está ligado a outra conta MarkAI." },
+          { status: 409 },
+        );
+      }
+
+      const updated = await client.users.updateUser(existingClerkUser.id, {
+        password,
+        externalId: existingClerkUser.externalId || user.id,
+        skipLegalChecks: true,
+        skipPasswordChecks: true,
+      });
+      clerkUserId = updated.id;
+    } else {
+      const nameParts = user.name.trim().split(/\s+/);
+      const created = await client.users.createUser({
+        emailAddress: [user.email],
+        password,
+        firstName: nameParts[0] || undefined,
+        lastName: nameParts.length > 1 ? nameParts.slice(1).join(" ") : undefined,
+        externalId: user.id,
+        skipLegalChecks: true,
+        skipPasswordChecks: true,
+      });
+      clerkUserId = created.id;
+      createdNewUser = true;
+    }
 
     const attached = (await sql`
       update users
-      set clerk_user_id = ${created.id}, updated_at = now()
-      where id = ${user.id}::uuid and clerk_user_id is null
+      set clerk_user_id = ${clerkUserId}, updated_at = now()
+      where id = ${user.id}::uuid
+        and (clerk_user_id is null or clerk_user_id = ${clerkUserId})
       returning id
     `) as unknown as Array<{ id: string }>;
 
     if (!attached[0]) {
-      try { await client.users.deleteUser(created.id); } catch {}
+      if (createdNewUser) {
+        try { await client.users.deleteUser(clerkUserId); } catch {}
+      }
       return NextResponse.json({ error: "Não foi possível ligar a conta." }, { status: 409 });
     }
 

@@ -2,13 +2,14 @@ import type { NextFetchEvent, NextRequest } from "next/server";
 import { normalizeClerkServerEnv } from "@/lib/clerk-env";
 
 export default async function proxy(request: NextRequest, event: NextFetchEvent) {
-  // Some Vercel environments expose the MarkAI Clerk keys under the project-
-  // scoped fallback names. Normalize them before loading Clerk so middleware
-  // and server auth use the same publishable, secret, and encryption keys.
-  normalizeClerkServerEnv();
+  // Vercel exposes the connected Clerk credentials under project-scoped
+  // fallback names. Normalize them before Clerk is evaluated, then pass the
+  // resolved keys explicitly so middleware and auth() share the same request
+  // state and encryption configuration.
+  const { publishableKey, secretKey } = normalizeClerkServerEnv();
 
   const { clerkMiddleware } = await import("@clerk/nextjs/server");
-  const handler = clerkMiddleware();
+  const handler = clerkMiddleware({ publishableKey, secretKey });
   return handler(request, event);
 }
 
