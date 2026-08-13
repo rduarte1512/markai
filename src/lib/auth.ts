@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { SignJWT, jwtVerify } from "jose";
 import { getSql } from "@/lib/db";
@@ -9,12 +9,41 @@ import { getBillingWorkspaceForUser } from "@/lib/workspaces";
 import type { AppContext, SessionPayload } from "@/lib/types";
 
 async function getClerkServerModule() {
-  // In Vercel, MarkAI may receive Clerk keys under project-scoped fallback
-  // names. Normalize those names before the Clerk server module is evaluated,
-  // otherwise auth() can use a different request-state encryption key than
-  // clerkMiddleware() and reject an otherwise valid browser session.
   normalizeClerkServerEnv();
   return import("@clerk/nextjs/server");
+}
+
+async function getAuthenticatedClerkUserId() {
+  const { publishableKey, secretKey } = normalizeClerkServerEnv();
+  const incomingHeaders = await headers();
+  const requestHeaders = new Headers();
+  incomingHeaders.forEach((value, key) => requestHeaders.append(key, value));
+
+  const forwardedHost = incomingHeaders.get("x-forwarded-host") || incomingHeaders.get("host") || "markaioficial.vercel.app";
+  const host = forwardedHost.split(",")[0].trim();
+  const forwardedProto = incomingHeaders.get("x-forwarded-proto") || (host.startsWith("localhost") ? "http" : "https");
+  const protocol = forwardedProto.split(",")[0].trim();
+  const origin = `${protocol}://${host}`;
+
+  const { clerkClient } = await getClerkServerModule();
+  const client = await clerkClient();
+  const requestState = await client.authenticateRequest(
+    new Request(`${origin}/`, { headers: requestHeaders }),
+    {
+      publishableKey,
+      secretKey,
+      authorizedParties: Array.from(new Set([
+        origin,
+        "https://markaioficial.vercel.app",
+        "https://markaioficial-zetawebs-projects.vercel.app",
+        "https://markaioficial-git-main-zetawebs-projects.vercel.app",
+        "http://localhost:3000",
+      ])),
+    },
+  );
+
+  if (!requestState.isAuthenticated) return null;
+  return requestState.toAuth().userId || null;
 }
 
 /**
@@ -168,11 +197,10 @@ async function getPreferredWorkspace(userId: string) {
 
 export async function getSession(): Promise<SessionPayload | null> {
   try {
-    const { auth: clerkAuth } = await getClerkServerModule();
-    const authState = await clerkAuth();
-    if (!authState.isAuthenticated || !authState.userId) return null;
+    const clerkUserId = await getAuthenticatedClerkUserId();
+    if (!clerkUserId) return null;
 
-    const user = await getOrCreateMarkAIUser(authState.userId);
+    const user = await getOrCreateMarkAIUser(clerkUserId);
     if (!user) return null;
 
     const workspaceId = await getPreferredWorkspace(user.id);
@@ -184,7 +212,7 @@ export async function getSession(): Promise<SessionPayload | null> {
       expiresAt: Math.floor(Date.now() / 1000) + 60 * 60,
     };
   } catch (cause) {
-    console.error("Clerk session bridge error:", cause);
+    console.error("Clerk direct session validation error:", cause);
     return null;
   }
 }
