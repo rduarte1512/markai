@@ -11,8 +11,7 @@ import type { AppContext, SessionPayload } from "@/lib/types";
 async function getConfiguredClerkClient() {
   const { publishableKey, secretKey } = normalizeClerkServerEnv();
   const { createClerkClient } = await import("@clerk/nextjs/server");
-  const configuredClient = createClerkClient({ publishableKey, secretKey });
-  return configuredClient();
+  return createClerkClient({ publishableKey, secretKey });
 }
 
 async function getAuthenticatedClerkUserId() {
