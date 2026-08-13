@@ -8,9 +8,11 @@ import { normalizeClerkServerEnv } from "@/lib/clerk-env";
 import { getBillingWorkspaceForUser } from "@/lib/workspaces";
 import type { AppContext, SessionPayload } from "@/lib/types";
 
-async function getClerkServerModule() {
-  normalizeClerkServerEnv();
-  return import("@clerk/nextjs/server");
+async function getConfiguredClerkClient() {
+  const { publishableKey, secretKey } = normalizeClerkServerEnv();
+  const { createClerkClient } = await import("@clerk/nextjs/server");
+  const configuredClient = createClerkClient({ publishableKey, secretKey });
+  return configuredClient();
 }
 
 async function getAuthenticatedClerkUserId() {
@@ -25,8 +27,7 @@ async function getAuthenticatedClerkUserId() {
   const protocol = forwardedProto.split(",")[0].trim();
   const origin = `${protocol}://${host}`;
 
-  const { clerkClient } = await getClerkServerModule();
-  const client = await clerkClient();
+  const client = await getConfiguredClerkClient();
   const requestState = await client.authenticateRequest(
     new Request(`${origin}/`, { headers: requestHeaders }),
     {
@@ -100,8 +101,7 @@ async function getOrCreateMarkAIUser(clerkUserId: string): Promise<MarkAIUser | 
   `) as unknown as MarkAIUser[];
   if (linked[0]) return linked[0];
 
-  const { clerkClient } = await getClerkServerModule();
-  const client = await clerkClient();
+  const client = await getConfiguredClerkClient();
   const clerkUser = await client.users.getUser(clerkUserId);
   const primaryEmail = clerkUser.emailAddresses.find(
     (item) => item.id === clerkUser.primaryEmailAddressId,
