@@ -18,11 +18,18 @@ export function clerkErrorCode(error: unknown): string {
 
 export function clerkErrorMessage(error: unknown, fallback: string): string {
   const code = clerkErrorCode(error);
+
+  if (code === "form_password_length_too_short" || code === "form_password_too_short") {
+    return "A palavra-passe precisa de ter apenas um mínimo de 8 caracteres.";
+  }
   if (code === "form_password_pwned") {
-    return "Esta palavra-passe apareceu numa fuga de dados conhecida. Para tua segurança, escolhe uma palavra-passe diferente.";
+    return "Esta palavra-passe apareceu numa fuga de dados conhecida. Pode ter 8 caracteres ou mais, mas tens de escolher uma palavra-passe diferente.";
   }
   if (code === "form_password_compromised") {
     return "Esta palavra-passe foi marcada como comprometida. Entra com Google ou redefine a palavra-passe para continuar.";
+  }
+  if (code === "form_identifier_exists") {
+    return "Este email já tem um login MarkAI. Entra com o mesmo email e palavra-passe para gerir ou criar outro workspace; não precisas de outro email.";
   }
 
   if (!error || typeof error !== "object") return fallback;
