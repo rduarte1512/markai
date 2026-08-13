@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
+import { clerkErrorMessage } from "@/lib/clerk-ui-errors";
 
 function GoogleIcon() {
   return (
@@ -28,10 +29,7 @@ function GoogleIcon() {
 }
 
 function errorMessage(error: unknown, fallback: string) {
-  if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
-    return error.message;
-  }
-  return fallback;
+  return clerkErrorMessage(error, fallback);
 }
 
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
