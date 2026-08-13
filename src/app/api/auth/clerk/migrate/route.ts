@@ -40,8 +40,7 @@ export async function POST(request: Request) {
 
     const { publishableKey, secretKey } = normalizeClerkServerEnv();
     const { createClerkClient } = await import("@clerk/nextjs/server");
-    const configuredClient = createClerkClient({ publishableKey, secretKey });
-    const client = await configuredClient();
+    const client = createClerkClient({ publishableKey, secretKey });
 
     const existingClerkUsers = await client.users.getUserList({
       emailAddress: [user.email],
