@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight, Bot, BrainCircuit, BriefcaseBusiness, CalendarDays, Check,
-  ChevronRight, CirclePlay, Copy, Crown, Gauge, Gem, Layers3, Menu,
+  ChevronRight, Copy, Crown, Gauge, Gem, Layers3, Menu,
   Megaphone, Rocket, ShieldCheck, Sparkles, Target, TrendingUp, Users,
   WandSparkles, Workflow, X, Zap,
 } from "lucide-react";
@@ -87,7 +87,7 @@ export default function HomePage() {
           </nav>
           <div className="v4-header-actions">
             <Link href="/login">Entrar</Link>
-            <Link className="v4-btn v4-btn-ghost" href="/register">Começar grátis</Link>
+            <Link className="v4-btn v4-btn-primary" href="/register">Começar grátis</Link>
           </div>
           <button className="v4-menu-btn" onClick={() => setMenuOpen(!menuOpen)} aria-label="Abrir menu">{menuOpen ? <X size={21}/> : <Menu size={21}/>}</button>
         </div>
@@ -100,7 +100,7 @@ export default function HomePage() {
           <span className="v4-pill">Marketing Operating System com IA</span>
           <h1>Cria. Publica. Mede.<br/><span>O MarkAI aprende com o que acontece.</span></h1>
           <p>O MarkAI liga Brand Intelligence, campanhas, anúncios, conteúdo, funis, performance, clientes, relatórios e automações no mesmo ciclo operacional.</p>
-          <div className="v4-hero-actions"><Link className="v4-btn v4-btn-primary v4-btn-lg" href="/register">Criar workspace gratuito <ArrowRight size={18}/></Link><a className="v4-btn v4-btn-ghost v4-btn-lg" href="#demo"><CirclePlay size={18}/> Ver produto em ação</a></div>
+          <div className="v4-hero-actions"><Link className="v4-btn v4-btn-primary v4-btn-lg" href="/register">Começar grátis <ArrowRight size={18}/></Link><a className="v4-btn v4-btn-ghost v4-btn-lg" href="#precos"><Crown size={18}/> Ver Planos</a></div>
           <div className="v4-trust"><span><Check size={15}/> Sem cartão</span><span><Check size={15}/> Growth OS incluído no Free com limites</span><span><Check size={15}/> Upgrade desbloqueia operação live</span></div>
           <div className="v4-stats"><div><strong>11</strong><span>modelos disponíveis</span></div><div><strong>8</strong><span>módulos Growth ligados</span></div><div><strong>1</strong><span>fonte de verdade</span></div></div>
 
