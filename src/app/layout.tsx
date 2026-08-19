@@ -8,6 +8,7 @@ import "./studio-v2-chrome.css";
 import "./studio-v2-workspaces.css";
 import "./studio-v2-operations.css";
 import "./landing-v3.css";
+import "./landing-pricing-v2.css";
 import "./studio-v3-polish.css";
 import "./agent-readability.css";
 import "./dashboard-premium.css";
